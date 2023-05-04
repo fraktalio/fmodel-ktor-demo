@@ -4,7 +4,7 @@ info:
   description: "fmodel_ktor_demo API"
   version: "1.0.0"
 servers:
-- url: "https://fmodel_ktor_demo"
+  - url: "https://fmodel_ktor_demo"
 paths:
   /cities:
     post:
@@ -27,11 +27,11 @@ paths:
     delete:
       description: "Delete city"
       parameters:
-      - name: "id"
-        in: "path"
-        required: true
-        schema:
-          type: "integer"
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
       responses:
         "200":
           description: "OK"
@@ -42,11 +42,11 @@ paths:
     get:
       description: "Read city"
       parameters:
-      - name: "id"
-        in: "path"
-        required: true
-        schema:
-          type: "integer"
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
       responses:
         "200":
           description: "OK"
@@ -63,11 +63,11 @@ paths:
     put:
       description: "Update city"
       parameters:
-      - name: "id"
-        in: "path"
-        required: true
-        schema:
-          type: "integer"
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
       requestBody:
         content:
           '*/*':

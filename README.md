@@ -18,7 +18,9 @@ docker run -d --name jaeger \
 -p 9411:9411 \
 jaegertracing/all-in-one:1.38
 ```
-Note, this run command was taken from the [Jaeger Docs](https://www.jaegertracing.io/docs/1.6/getting-started/#all-in-one-docker-image)
+
+Note, this run command was taken from
+the [Jaeger Docs](https://www.jaegertracing.io/docs/1.6/getting-started/#all-in-one-docker-image)
 and probably opens unnecessary ports for this example.
 
 Once running, you can view the UI at http://localhost:16686/.
@@ -29,13 +31,23 @@ Once running, you can view the UI at http://localhost:16686/.
 gradle run
 ```
 
-You may want to compare the difference with the `otel.instrumentation.kotlinx-coroutines.enabled` flag enabled or
-disabled. You can toggle this by commenting out or including [this line in the gradle build file](./build.gradle.kts).
+Build fat jar:
 
+```shell
+./gradlew buildFatJar
+```
+
+Run the jar from terminal:
+
+```shell
+java -Dio.ktor.development=true -javaagent:./opentelemetry-javaagent.jar -Dotel.service.name=fmodel-ktor-demo -Dotel.traces.exporter=jaeger -Dotel.exporter.jaeger.endpoint=http://localhost:14250 -Dotel.metrics.exporter=none -Dotel.instrumentation.experimental.span-suppression-strategy=none -jar build/libs/fmodel-ktor-demo-all.jar
+```
 
 ### Resources
 
 #### Tracing (Open Telemetry)
+
 - [https://github.com/open-telemetry/opentelemetry-java-instrumentation/tree/main/instrumentation/ktor/ktor-2.0/library](https://github.com/open-telemetry/opentelemetry-java-instrumentation/tree/main/instrumentation/ktor/ktor-2.0/library)
 - [https://github.com/open-telemetry/opentelemetry-java-instrumentation/issues/7755](https://github.com/open-telemetry/opentelemetry-java-instrumentation/issues/7755)
 - [https://github.com/mpeyper/open-telemetry-coroutine-tracing-repro/tree/main/src/main/kotlin/example](https://github.com/mpeyper/open-telemetry-coroutine-tracing-repro/tree/main/src/main/kotlin/example)
+

@@ -1,10 +1,10 @@
 package com.fraktalio.routes
 
+import com.fraktalio.LOGGER
 import com.fraktalio.plugins.withSpan
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.util.logging.*
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flow
@@ -46,7 +46,6 @@ fun Application.homeRouting() {
 
 }
 
-internal val LOGGER = KtorSimpleLogger("Fraktalio Logger")
 
 private suspend fun childService1() = withSpan("childService1") {
     LOGGER.debug("Hello from childService1")

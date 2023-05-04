@@ -1,5 +1,6 @@
 package com.fraktalio.routes
 
+import com.fraktalio.LOGGER
 import com.fraktalio.plugins.withSpan
 import com.fraktalio.services.City
 import com.fraktalio.services.CityService
@@ -8,6 +9,7 @@ import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.coroutines.flow.toList
 
 fun Application.cityRouting(cityService: CityService) {
 
@@ -30,6 +32,24 @@ fun Application.cityRouting(cityService: CityService) {
                 withSpan("response") { call.respond(HttpStatusCode.OK, city) }
             } catch (e: Exception) {
                 withSpan("response-exception") { call.respond(HttpStatusCode.NotFound) }
+            }
+
+
+        }
+
+        get("/cities") {
+            try {
+                withSpan("request") {
+                    LOGGER.debug("Request: {}", call.request)
+                }
+                val cities = cityService.readAll().withSpan("service - flow").toList()
+                withSpan("response") { call.respond(HttpStatusCode.OK, cities) }
+            } catch (e: Exception) {
+
+                withSpan("response-exception") {
+                    LOGGER.error("Error: $e")
+                    call.respond(HttpStatusCode.NotFound)
+                }
             }
 
 
