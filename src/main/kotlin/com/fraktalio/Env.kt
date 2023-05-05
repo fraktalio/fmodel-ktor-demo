@@ -15,6 +15,7 @@ private const val R2DBC_USERNAME: String = "root"
 private const val R2DBC_PASSWORD: String = ""
 private const val R2DBC_DATABASE: String = "test"
 private const val R2DBC_HOST: String = "localhost"
+private const val R2DBC_PORT: Int = 5432
 private const val R2DBC_INITIAL_POOL_SIZE: Int = 10
 private const val R2DBC_MAX_POOL_SIZE: Int = 10
 private const val R2DBC_MAX_IDLE_TIME: Long = 30_000
@@ -38,7 +39,7 @@ data class Env(
         val protocol: String = getenv("R2DBC_PROTOCOL") ?: R2DBC_PROTOCOL,
         val database: String = getenv("R2DBC_DATABASE") ?: R2DBC_DATABASE,
         val host: String = getenv("R2DBC_HOST") ?: R2DBC_HOST,
-        val port: String = getenv("R2DBC_PORT") ?: "5432",
+        val port: Int = getenv("R2DBC_PORT")?.toIntOrNull() ?: R2DBC_PORT,
         val initialPoolSize: Int = getenv("R2DBC_INITIAL_POOL_SIZE")?.toIntOrNull() ?: R2DBC_INITIAL_POOL_SIZE,
         val maxPoolSize: Int = getenv("R2DBC_MAX_POOL_SIZE")?.toIntOrNull() ?: R2DBC_MAX_POOL_SIZE,
         val maxIdleTime: Long = getenv("R2DBC_MAX_IDLE_TIME")?.toLongOrNull() ?: R2DBC_MAX_IDLE_TIME

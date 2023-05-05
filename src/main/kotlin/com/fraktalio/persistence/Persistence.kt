@@ -14,12 +14,8 @@ import io.r2dbc.pool.ConnectionPoolConfiguration
 import io.r2dbc.spi.*
 import io.r2dbc.spi.ConnectionFactoryOptions.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.reactive.asFlow
-import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.reactive.awaitSingle
 import javax.sql.DataSource
 import kotlin.time.Duration.Companion.milliseconds
@@ -53,7 +49,7 @@ suspend fun ResourceScope.pooledConnectionFactory(
             .option(DRIVER, env.driver)
             .option(PROTOCOL, env.protocol)
             .option(HOST, env.host)
-            //.option(PORT, env.port)
+            .option(PORT, env.port)
             .option(USER, env.username)
             .option(PASSWORD, env.password)
             .option(DATABASE, env.database)
@@ -77,7 +73,7 @@ suspend fun ConnectionFactory.connection(): Resource<Connection> = resource({
     conn
 }) { connection, exitCase ->
     LOGGER.debug("Releasing {} with exit: {}", connection, exitCase)
-    connection.close().awaitFirstOrNull()
+    connection.close().asFlow().singleOrNull()
 }
 
 

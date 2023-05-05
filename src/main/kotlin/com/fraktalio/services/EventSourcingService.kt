@@ -3,7 +3,7 @@ package com.fraktalio.services
 import javax.sql.DataSource
 
 
-class EventSourcingService(private val dataSource: DataSource) {
+class EventSourcingService(dataSource: DataSource) {
     companion object {
         private const val CREATE_TABLE_DECIDERS =
             """
