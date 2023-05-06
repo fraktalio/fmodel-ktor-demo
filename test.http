@@ -1,0 +1,36 @@
+### Send POST request
+POST http://localhost:8080/cities
+Content-Type: application/json
+
+{
+  "name": "Kraljevo",
+  "population": 80000
+}
+
+### Send POST request
+POST http://localhost:8080/cities
+Content-Type: application/json
+
+{
+  "name": "Beograd",
+  "population": 1500000
+}
+
+### GET request
+GET  http://localhost:8080/cities
+
+### GET request
+GET  http://localhost:8080/cities/1
+
+### Send PUT request
+PUT http://localhost:8080/cities/1
+Content-Type: application/json
+
+{
+  "name": "Cacak",
+  "population": 60000
+}
+
+### Send DELETE request
+DELETE http://localhost:8080/cities/1
+Content-Type: application/json

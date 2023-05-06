@@ -1,9 +1,12 @@
+val kotlin_version: String by project
+val coroutines_version: String by project
 val ktor_version: String by project
 val arrow_version: String by project
-val kotlin_version: String by project
+val suspendapp_version: String by project
 val logback_version: String by project
 val postgres_version: String by project
 val h2_version: String by project
+val r2dbc_version: String by project
 val prometeus_version: String by project
 val opentelemetry_version: String by project
 
@@ -39,13 +42,12 @@ dependencies {
     implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:$ktor_version")
     implementation("io.ktor:ktor-server-content-negotiation-jvm:$ktor_version")
     implementation("io.arrow-kt:arrow-core:$arrow_version")
-    implementation("io.arrow-kt:suspendapp:0.4.0")
-    implementation("io.arrow-kt:suspendapp-ktor:0.4.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:1.7.0")
-//    implementation("org.postgresql:r2dbc-postgresql:1.0.1.RELEASE")
-    implementation("io.r2dbc:r2dbc-spi:1.0.0.RELEASE")
-    implementation("io.r2dbc:r2dbc-h2:1.0.0.RELEASE")
-    implementation("io.r2dbc:r2dbc-pool:1.0.0.RELEASE")
+    implementation("io.arrow-kt:suspendapp:$suspendapp_version")
+    implementation("io.arrow-kt:suspendapp-ktor:$suspendapp_version")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:$coroutines_version")
+    implementation("io.r2dbc:r2dbc-spi:$r2dbc_version")
+    implementation("io.r2dbc:r2dbc-h2:$r2dbc_version")
+    implementation("io.r2dbc:r2dbc-pool:$r2dbc_version")
     implementation("io.ktor:ktor-server-metrics-micrometer-jvm:$ktor_version")
     implementation("io.micrometer:micrometer-registry-prometheus:$prometeus_version")
     implementation("io.ktor:ktor-server-cio-jvm:$ktor_version")
@@ -57,5 +59,5 @@ dependencies {
     implementation("io.ktor:ktor-server-openapi:$ktor_version")
     testImplementation("io.ktor:ktor-server-tests-jvm:$ktor_version")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
-    testImplementation("io.ktor:ktor-server-test-host-jvm:2.3.0")
+    testImplementation("io.ktor:ktor-server-test-host-jvm:$ktor_version")
 }

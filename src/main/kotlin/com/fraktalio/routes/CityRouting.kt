@@ -1,6 +1,5 @@
 package com.fraktalio.routes
 
-import com.fraktalio.LOGGER
 import com.fraktalio.plugins.withSpan
 import com.fraktalio.services.City
 import com.fraktalio.services.CityService
