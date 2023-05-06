@@ -43,7 +43,7 @@ dependencies {
     implementation("io.arrow-kt:suspendapp-ktor:0.4.0")
     implementation("org.postgresql:postgresql:$postgres_version")
     implementation("com.h2database:h2:$h2_version")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:1.7.0-RC")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:1.7.0")
     implementation("org.postgresql:r2dbc-postgresql:1.0.1.RELEASE")
     implementation("io.r2dbc:r2dbc-spi:1.0.0.RELEASE")
     implementation("io.r2dbc:r2dbc-h2:1.0.0.RELEASE")

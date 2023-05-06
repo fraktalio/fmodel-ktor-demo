@@ -14,9 +14,14 @@ import io.r2dbc.pool.ConnectionPoolConfiguration
 import io.r2dbc.spi.*
 import io.r2dbc.spi.ConnectionFactoryOptions.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitSingle
+import kotlinx.coroutines.reactor.awaitSingleOrNull
+import reactor.core.publisher.Mono
 import javax.sql.DataSource
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.toJavaDuration
@@ -69,27 +74,37 @@ suspend fun ResourceScope.pooledConnectionFactory(
 
 suspend fun ConnectionFactory.connection(): Resource<Connection> = resource({
     val conn = create().awaitSingle()
-    LOGGER.debug("Creating new connection: {}", conn)
+    LOGGER.debug("Obtained new connection from the pool: {}", conn)
     conn
 }) { connection, exitCase ->
-    LOGGER.debug("Releasing {} with exit: {}", connection, exitCase)
-    connection.close().asFlow().singleOrNull()
+    LOGGER.debug("Releasing connection {} with exit: {}", connection, exitCase)
+    (connection.close() as Mono).awaitSingleOrNull()
+    LOGGER.debug("Released connection {}", connection)
+
 }
 
-
 @OptIn(ExperimentalCoroutinesApi::class)
-fun <R : Any> Resource<Connection>.query(
+private fun <R : Any> Connection.executeSql(
+    sql: String,
+    f: (Row, RowMetadata) -> R,
+    prepare: Statement.() -> Unit = {}
+): Flow<R> =
+    createStatement(sql)
+        .also(prepare)
+        .execute()
+        .asFlow()
+        .flatMapConcat { it.map(f).asFlow() }
+
+
+fun <R : Any> Resource<Connection>.executeSql(
     sql: String,
     f: (Row, RowMetadata) -> R,
     prepare: Statement.() -> Unit = {}
 ): Flow<R> = flow {
     resourceScope {
         val connection = bind()
-        emitAll(connection.createStatement(sql)
-            .also(prepare)
-            .execute()
-            .asFlow()
-            .flatMapConcat { it.map(f).asFlow() }
-        )
+        emitAll(connection.executeSql(sql, f, prepare))
     }
 }
+
+

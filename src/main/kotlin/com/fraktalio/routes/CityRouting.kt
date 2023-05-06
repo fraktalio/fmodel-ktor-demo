@@ -17,8 +17,8 @@ fun Application.cityRouting(cityService: CityService) {
         // Create city
         post("/cities") {
             val city = withSpan("request") { call.receive<City>() }
-            val id = withSpan("service") { cityService.create(city) }
-            withSpan("response") { call.respond(HttpStatusCode.Created, id) }
+            val createdCity = withSpan("service") { cityService.create(city) }
+            withSpan("response") { call.respond(HttpStatusCode.Created, createdCity) }
         }
         // Read city
         get("/cities/{id}") {
@@ -33,8 +33,6 @@ fun Application.cityRouting(cityService: CityService) {
             } catch (e: Exception) {
                 withSpan("response-exception") { call.respond(HttpStatusCode.NotFound) }
             }
-
-
         }
 
         get("/cities") {
@@ -51,15 +49,13 @@ fun Application.cityRouting(cityService: CityService) {
                     call.respond(HttpStatusCode.NotFound)
                 }
             }
-
-
         }
         // Update city
         put("/cities/{id}") {
             val id = call.parameters["id"]?.toInt() ?: throw IllegalArgumentException("Invalid ID")
             val user = call.receive<City>()
-            cityService.update(id, user)
-            call.respond(HttpStatusCode.OK)
+            val updatedCity = cityService.update(id, user)
+            call.respond(HttpStatusCode.OK, updatedCity)
         }
         // Delete city
         delete("/cities/{id}") {
