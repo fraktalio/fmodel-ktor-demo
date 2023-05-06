@@ -25,8 +25,8 @@ application {
         "-Dotel.traces.exporter=jaeger",
         "-Dotel.exporter.jaeger.endpoint=http://localhost:14250",
         "-Dotel.metrics.exporter=none",
-        "-Dotel.instrumentation.experimental.span-suppression-strategy=none"
-        //"-Dotel.instrumentation.kotlinx-coroutines.enabled=true"
+        "-Dotel.instrumentation.experimental.span-suppression-strategy=none",
+        "-Dotel.instrumentation.kotlinx-coroutines.enabled=true"
     )
 }
 
@@ -41,14 +41,11 @@ dependencies {
     implementation("io.arrow-kt:arrow-core:$arrow_version")
     implementation("io.arrow-kt:suspendapp:0.4.0")
     implementation("io.arrow-kt:suspendapp-ktor:0.4.0")
-    implementation("org.postgresql:postgresql:$postgres_version")
-    implementation("com.h2database:h2:$h2_version")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:1.7.0")
-    implementation("org.postgresql:r2dbc-postgresql:1.0.1.RELEASE")
+//    implementation("org.postgresql:r2dbc-postgresql:1.0.1.RELEASE")
     implementation("io.r2dbc:r2dbc-spi:1.0.0.RELEASE")
     implementation("io.r2dbc:r2dbc-h2:1.0.0.RELEASE")
     implementation("io.r2dbc:r2dbc-pool:1.0.0.RELEASE")
-    implementation("com.zaxxer:HikariCP:5.0.1")
     implementation("io.ktor:ktor-server-metrics-micrometer-jvm:$ktor_version")
     implementation("io.micrometer:micrometer-registry-prometheus:$prometeus_version")
     implementation("io.ktor:ktor-server-cio-jvm:$ktor_version")

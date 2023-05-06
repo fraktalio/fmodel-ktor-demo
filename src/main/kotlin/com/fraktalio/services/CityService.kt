@@ -1,5 +1,6 @@
 package com.fraktalio.services
 
+import com.fraktalio.LOGGER
 import com.fraktalio.persistence.connection
 import com.fraktalio.persistence.executeSql
 import io.r2dbc.spi.ConnectionFactory
@@ -14,10 +15,10 @@ import javax.sql.DataSource
 @Serializable
 data class City(val name: String, val population: Int)
 
-class CityService(private val dataSource: DataSource, private val connectionFactory: ConnectionFactory) {
+class CityService(private val connectionFactory: ConnectionFactory) {
     companion object {
         private const val CREATE_TABLE_CITIES =
-            "CREATE TABLE CITIES (ID SERIAL PRIMARY KEY, NAME VARCHAR(255), POPULATION INT);"
+            "CREATE TABLE CITIES (ID IDENTITY NOT NULL PRIMARY KEY, NAME VARCHAR(20), POPULATION INT);"
         private const val SELECT_CITY_BY_ID = "SELECT name, population FROM cities WHERE id = ?"
         private const val SELECT_CITIES = "SELECT name, population FROM cities"
         private const val INSERT_CITY = "INSERT INTO cities (name, population) VALUES (?, ?)"
@@ -27,15 +28,15 @@ class CityService(private val dataSource: DataSource, private val connectionFact
     }
 
     val cityMapper: (Row, RowMetadata) -> City = { row, _ ->
-        City(row.get("name", String::class.java) ?: "", row.get("population", Number::class.java).toInt())
+        City(row.get("name", String::class.java) ?: "", row.get("population", Number::class.java)?.toInt() ?: 0)
     }
 
-    init {
-        dataSource.connection.use {
-            it.createStatement().run {
-                executeUpdate(CREATE_TABLE_CITIES)
-            }
-        }
+    // Initialize schema
+    suspend fun initSchema() = withContext(Dispatchers.IO) {
+        LOGGER.debug("Initializing schema")
+        connectionFactory.connection()
+            .executeSql(CREATE_TABLE_CITIES, cityMapper)
+            .collect()
     }
 
     // Create new city
@@ -56,7 +57,7 @@ class CityService(private val dataSource: DataSource, private val connectionFact
             .also { emitAll(it) }
     }.flowOn(Dispatchers.IO)
 
-    // Read by id
+    // Read city by id
     suspend fun read(id: Int): City = withContext(Dispatchers.IO) {
         connectionFactory.connection()
             .executeSql(SELECT_CITY_BY_ID, cityMapper) {

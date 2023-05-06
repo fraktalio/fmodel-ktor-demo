@@ -1,14 +1,11 @@
 package com.fraktalio.persistence
 
 import arrow.fx.coroutines.Resource
-import arrow.fx.coroutines.autoCloseable
 import arrow.fx.coroutines.continuations.ResourceScope
 import arrow.fx.coroutines.resource
 import arrow.fx.coroutines.resourceScope
 import com.fraktalio.Env
 import com.fraktalio.LOGGER
-import com.zaxxer.hikari.HikariConfig
-import com.zaxxer.hikari.HikariDataSource
 import io.r2dbc.pool.ConnectionPool
 import io.r2dbc.pool.ConnectionPoolConfiguration
 import io.r2dbc.spi.*
@@ -22,30 +19,9 @@ import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import reactor.core.publisher.Mono
-import javax.sql.DataSource
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.toJavaDuration
 
-// https://arrow-kt.io/learn/coroutines/resource-safety/
-suspend fun ResourceScope.dataSource(env: Env.DataSource): DataSource = autoCloseable {
-    HikariDataSource(
-        HikariConfig().apply {
-            jdbcUrl = env.jdbcUrl
-            username = env.username
-            password = env.password
-            driverClassName = env.driverClassName
-        }
-    )
-}
-
-fun DataSource.connection(): Resource<java.sql.Connection> = resource({
-    connection
-}) { connection, exitCase ->
-    LOGGER.debug("Releasing {} with exit: {}", connection, exitCase)
-    connection.close()
-}
-
-// https://github.com/r2dbc/r2dbc-pool#getting-started
 suspend fun ResourceScope.pooledConnectionFactory(
     env: Env.R2DBCDataSource
 ): ConnectionFactory = install({

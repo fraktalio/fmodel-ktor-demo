@@ -1,9 +1,9 @@
 package com.fraktalio.services
 
-import javax.sql.DataSource
+import io.r2dbc.spi.ConnectionFactory
 
 
-class EventSourcingService(dataSource: DataSource) {
+class EventSourcingService(private val connectionFactory: ConnectionFactory) {
     companion object {
         private const val CREATE_TABLE_DECIDERS =
             """
@@ -43,13 +43,6 @@ class EventSourcingService(dataSource: DataSource) {
                     FOREIGN KEY ("decider", "event") REFERENCES deciders ("decider", "event")
                 );
             """
-
-    }
-
-    init {
-        val statement = dataSource.connection.createStatement()
-        statement.executeUpdate(CREATE_TABLE_DECIDERS)
-        statement.executeUpdate(CREATE_TABLE_EVENTS)
     }
 }
 
