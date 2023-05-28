@@ -17,12 +17,12 @@ data class City(val name: String, val population: Int)
 class CityService(private val connectionFactory: ConnectionFactory) {
     companion object {
         private const val CREATE_TABLE_CITIES =
-            "CREATE TABLE IF NOT EXISTS CITIES (ID VARCHAR(20) PRIMARY KEY, NAME VARCHAR(20), POPULATION INT);"
-        private const val SELECT_CITY_BY_ID = "SELECT name, population FROM cities WHERE id = ?"
+            "CREATE TABLE IF NOT EXISTS CITIES (ID BIGSERIAL PRIMARY KEY, NAME VARCHAR(20), POPULATION INT);"
+        private const val SELECT_CITY_BY_ID = "SELECT name, population FROM cities WHERE id = \$1"
         private const val SELECT_CITIES = "SELECT name, population FROM cities"
-        private const val INSERT_CITY = "INSERT INTO cities (name, population) VALUES (?, ?)"
-        private const val UPDATE_CITY = "UPDATE cities SET name = ?, population = ? WHERE id = ?"
-        private const val DELETE_CITY = "DELETE FROM cities WHERE id = ?"
+        private const val INSERT_CITY = "INSERT INTO cities (name, population) VALUES (\$1, \$2)"
+        private const val UPDATE_CITY = "UPDATE cities SET name = \$1, population = \$2 WHERE id = \$3"
+        private const val DELETE_CITY = "DELETE FROM cities WHERE id = \$1"
 
     }
 

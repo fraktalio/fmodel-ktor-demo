@@ -60,6 +60,12 @@ suspend fun ConnectionFactory.connection(): Resource<Connection> = resource({
 
 }
 
+inline fun <reified T : Any> Statement.bindT(name: String, value: T?) =
+    bind(name, if (value != null) Parameters.`in`(value) else Parameters.`in`(T::class.java))
+
+inline fun <reified T : Any> Statement.bindT(index: Int, value: T?) =
+    bind(index, if (value != null) Parameters.`in`(value) else Parameters.`in`(T::class.java))
+
 @OptIn(ExperimentalCoroutinesApi::class)
 private fun <R : Any> Connection.executeSql(
     sql: String,

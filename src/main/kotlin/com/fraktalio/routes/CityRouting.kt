@@ -1,5 +1,6 @@
 package com.fraktalio.routes
 
+import com.fraktalio.LOGGER
 import com.fraktalio.plugins.withSpan
 import com.fraktalio.services.City
 import com.fraktalio.services.CityService
@@ -20,6 +21,7 @@ fun Application.cityRouting(cityService: CityService) {
                 val createdCity = withSpan("service") { cityService.create(city) }
                 withSpan("response") { call.respond(HttpStatusCode.Created, createdCity) }
             } catch (e: Exception) {
+                LOGGER.error("Error: ${e.message}", e)
                 withSpan("response-exception") { call.respond(HttpStatusCode.BadRequest) }
             }
         }
@@ -33,6 +35,7 @@ fun Application.cityRouting(cityService: CityService) {
                 val city = withSpan("service") { cityService.read(id) }
                 withSpan("response") { call.respond(HttpStatusCode.OK, city) }
             } catch (e: Exception) {
+                LOGGER.error("Error: ${e.message}", e)
                 withSpan("response-exception") { call.respond(HttpStatusCode.BadRequest) }
             }
         }
@@ -42,6 +45,7 @@ fun Application.cityRouting(cityService: CityService) {
                 val cities = cityService.readAll().withSpan("service - flow").toList()
                 withSpan("response") { call.respond(HttpStatusCode.OK, cities) }
             } catch (e: Exception) {
+                LOGGER.error("Error: ${e.message}", e)
                 withSpan("response-exception") { call.respond(HttpStatusCode.NotFound) }
             }
         }
@@ -53,6 +57,7 @@ fun Application.cityRouting(cityService: CityService) {
                 val updatedCity = cityService.update(id, user)
                 call.respond(HttpStatusCode.OK, updatedCity)
             } catch (e: Exception) {
+                LOGGER.error("Error: ${e.message}", e)
                 withSpan("response-exception") { call.respond(HttpStatusCode.BadRequest) }
             }
         }
@@ -63,6 +68,7 @@ fun Application.cityRouting(cityService: CityService) {
                 cityService.delete(id)
                 call.respond(HttpStatusCode.OK)
             } catch (e: Exception) {
+                LOGGER.error("Error: ${e.message}", e)
                 withSpan("response-exception") { call.respond(HttpStatusCode.BadRequest) }
             }
         }

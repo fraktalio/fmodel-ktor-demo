@@ -1,12 +1,13 @@
-package com.fraktalio.services
+package com.fraktalio.persistence
 
 import com.fraktalio.LOGGER
-import com.fraktalio.persistence.alterSQLResource
-import com.fraktalio.persistence.connection
+import io.r2dbc.postgresql.codec.Json
 import io.r2dbc.spi.ConnectionFactory
 import io.r2dbc.spi.Row
 import io.r2dbc.spi.RowMetadata
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withContext
 import java.time.OffsetDateTime
 import java.util.*
@@ -39,7 +40,7 @@ internal val eventMapper: (Row, RowMetadata) -> EventEntity = { row, _ ->
     )
 }
 
-class EventSourcingService(private val connectionFactory: ConnectionFactory) {
+internal class EventStore(private val connectionFactory: ConnectionFactory) {
     companion object {
         private const val CREATE_TABLE_DECIDERS =
             """
@@ -178,8 +179,51 @@ class EventSourcingService(private val connectionFactory: ConnectionFactory) {
                     FOR EACH ROW
                 EXECUTE FUNCTION check_previous_id_in_same_decider();
             """
+        private const val GET_EVENTS_BY_DECIDER =
+            """
+                CREATE OR REPLACE FUNCTION get_events(v_decider_id TEXT)
+                RETURNS SETOF events AS
+            '
+                BEGIN
+                    RETURN QUERY SELECT *
+                                 FROM events
+                                 WHERE decider_id = v_decider_id
+                                 ORDER BY "offset";
+                END;
+            ' LANGUAGE plpgsql;
+            """
+        private const val GET_LAST_EVENT_BY_DECIDER =
+            """
+                CREATE OR REPLACE FUNCTION get_last_event(v_decider_id TEXT)
+                RETURNS SETOF events AS
+            '
+                BEGIN
+                    RETURN QUERY SELECT *
+                                 FROM events
+                                 WHERE decider_id = v_decider_id
+                                 ORDER BY "offset" DESC
+                                 LIMIT 1;
+                END;
+            ' LANGUAGE plpgsql;
+            """
+        private const val APPEND_EVENT =
+            """
+                CREATE OR REPLACE FUNCTION append_event(v_event TEXT, v_event_id UUID, v_decider TEXT, v_decider_id TEXT, v_data JSONB,
+                                        v_command_id UUID, v_previous_id UUID)
+                RETURNS SETOF events AS
+            '
+                BEGIN
+                    RETURN QUERY INSERT INTO events (event, event_id, decider, decider_id, data, command_id, previous_id)
+                        VALUES (v_event, v_event_id, v_decider, v_decider_id, v_data, v_command_id, v_previous_id)
+                        RETURNING *;
+                END;
+            ' LANGUAGE plpgsql;
+            """
 
     }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val dbDispatcher = Dispatchers.IO.limitedParallelism(10)
 
     // Initialize schema
     suspend fun initSchema() = withContext(Dispatchers.IO) {
@@ -224,8 +268,66 @@ class EventSourcingService(private val connectionFactory: ConnectionFactory) {
             "####  Created function check_previous_id_in_same_decider with result {} ####",
             connectionFactory.connection().alterSQLResource(CHECK_PREVIOUS_ID_IN_SAME_DECIDER)
         )
+        LOGGER.debug(
+            "####  Created function get_events with result {} ####",
+            connectionFactory.connection().alterSQLResource(GET_EVENTS_BY_DECIDER)
+        )
+        LOGGER.debug(
+            "####  Created function get_last_event with result {} ####",
+            connectionFactory.connection().alterSQLResource(GET_LAST_EVENT_BY_DECIDER)
+        )
+        LOGGER.debug(
+            "####  Created function append_event with result {} ####",
+            connectionFactory.connection().alterSQLResource(APPEND_EVENT)
+        )
         LOGGER.debug("###### Event Sourcing schema initialized #######")
     }
 
+    fun getEvents(deciderId: String): Flow<EventEntity> = flow {
+        connectionFactory.connection()
+            .executeSql(
+                """
+                SELECT * FROM get_events($1)
+                """,
+                eventMapper
+            ) {
+                bind(0, deciderId)
+            }
+            .also { emitAll(it) }
+    }.flowOn(dbDispatcher)
+
+    suspend fun getLastEvent(deciderId: String): EventEntity? = withContext(dbDispatcher) {
+        connectionFactory.connection()
+            .executeSql(
+                """
+                SELECT * FROM get_last_event($1)
+                """,
+                eventMapper
+            ) {
+                bind(0, deciderId)
+            }
+            .singleOrNull()
+    }
+
+    suspend fun append(eventEntity: EventEntity): EventEntity = withContext(dbDispatcher) {
+        with(eventEntity) {
+            connectionFactory.connection()
+                .executeSql(
+                    """
+                    SELECT * FROM append_event($1, $2, $3, $4, $5, $6, $7)
+                    """,
+                    eventMapper
+                ) {
+                    bind(0, event)
+                    bind(1, eventId)
+                    bind(2, decider)
+                    bind(3, deciderId)
+                    bind(4, Json.of(data))
+                    bindT(5, commandId)
+                    bindT(6, previousId)
+                }
+                .single()
+        }
+    }
 }
 
