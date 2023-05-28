@@ -25,6 +25,12 @@ and probably opens unnecessary ports for this example.
 
 Once running, you can view the UI at http://localhost:16686/.
 
+### Postgres
+
+```shell
+docker run --name postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres
+```
+
 ### Application
 
 ```shell

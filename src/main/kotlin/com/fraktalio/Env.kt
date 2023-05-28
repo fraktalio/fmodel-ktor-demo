@@ -4,11 +4,11 @@ import java.lang.System.getenv
 
 private const val PORT: Int = 8080
 
-private const val R2DBC_DRIVER: String = "h2"
+private const val R2DBC_DRIVER: String = "postgres"
 private const val R2DBC_PROTOCOL: String = "mem"
-private const val R2DBC_USERNAME: String = "root"
-private const val R2DBC_PASSWORD: String = ""
-private const val R2DBC_DATABASE: String = "test"
+private const val R2DBC_USERNAME: String = "postgres"
+private const val R2DBC_PASSWORD: String = "postgres"
+private const val R2DBC_DATABASE: String = "postgres"
 private const val R2DBC_HOST: String = "localhost"
 private const val R2DBC_PORT: Int = 5432
 private const val R2DBC_INITIAL_POOL_SIZE: Int = 10

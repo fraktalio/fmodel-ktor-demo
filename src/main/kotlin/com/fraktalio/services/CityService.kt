@@ -10,7 +10,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import javax.sql.DataSource
 
 @Serializable
 data class City(val name: String, val population: Int)
@@ -18,7 +17,7 @@ data class City(val name: String, val population: Int)
 class CityService(private val connectionFactory: ConnectionFactory) {
     companion object {
         private const val CREATE_TABLE_CITIES =
-            "CREATE TABLE CITIES (ID IDENTITY NOT NULL PRIMARY KEY, NAME VARCHAR(20), POPULATION INT);"
+            "CREATE TABLE IF NOT EXISTS CITIES (ID VARCHAR(20) PRIMARY KEY, NAME VARCHAR(20), POPULATION INT);"
         private const val SELECT_CITY_BY_ID = "SELECT name, population FROM cities WHERE id = ?"
         private const val SELECT_CITIES = "SELECT name, population FROM cities"
         private const val INSERT_CITY = "INSERT INTO cities (name, population) VALUES (?, ?)"

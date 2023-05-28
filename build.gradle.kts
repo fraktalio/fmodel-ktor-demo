@@ -48,6 +48,7 @@ dependencies {
     implementation("io.r2dbc:r2dbc-spi:$r2dbc_version")
     implementation("io.r2dbc:r2dbc-h2:$r2dbc_version")
     implementation("io.r2dbc:r2dbc-pool:$r2dbc_version")
+    implementation("io.r2dbc:r2dbc-postgresql:0.8.13.RELEASE")
     implementation("io.ktor:ktor-server-metrics-micrometer-jvm:$ktor_version")
     implementation("io.micrometer:micrometer-registry-prometheus:$prometeus_version")
     implementation("io.ktor:ktor-server-cio-jvm:$ktor_version")

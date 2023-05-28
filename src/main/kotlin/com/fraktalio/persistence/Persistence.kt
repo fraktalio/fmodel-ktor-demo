@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.reactive.asFlow
+import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import reactor.core.publisher.Mono
@@ -28,7 +29,7 @@ suspend fun ResourceScope.pooledConnectionFactory(
     val connectionFactory = ConnectionFactories.get(
         builder()
             .option(DRIVER, env.driver)
-            .option(PROTOCOL, env.protocol)
+            //.option(PROTOCOL, env.protocol)
             .option(HOST, env.host)
             .option(PORT, env.port)
             .option(USER, env.username)
@@ -82,5 +83,17 @@ fun <R : Any> Resource<Connection>.executeSql(
         emitAll(connection.executeSql(sql, f, prepare))
     }
 }
+
+suspend fun Resource<Connection>.alterSQLResource(
+    sql: String
+): Long? = resourceScope {
+    val connection = bind()
+    connection.createStatement(sql)
+        .execute()
+        .awaitFirstOrNull()
+        ?.rowsUpdated
+        ?.awaitFirstOrNull()
+}
+
 
 
