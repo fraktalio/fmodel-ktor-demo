@@ -14,6 +14,9 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withContext
 
+/**
+ * Configure OpenTelemetry tracing
+ */
 fun Application.configureTracing() {
     val openTelemetry: OpenTelemetry = GlobalOpenTelemetry.get()
 
@@ -22,6 +25,9 @@ fun Application.configureTracing() {
     }
 }
 
+/**
+ * Start a new span, with the given name, attributes and span kind, by reference to the current/parent span.
+ */
 suspend fun startSpan(name: String, attributes: List<Pair<String, String>>, spanKind: SpanKind?): Span =
     GlobalOpenTelemetry
         .getTracer(object {}.javaClass.packageName)
@@ -36,6 +42,10 @@ suspend fun startSpan(name: String, attributes: List<Pair<String, String>>, span
             startSpan()
         }
 
+/**
+ * Start a new span, with the given name, attributes and span kind, by reference to the current/parent span.
+ * @receiver [Flow]
+ */
 fun <R> Flow<R>.withSpan(
     name: String = getDefaultSpanName(),
     attributes: List<Pair<String, String>> = emptyList(),
@@ -53,6 +63,9 @@ fun <R> Flow<R>.withSpan(
             })
 }
 
+/**
+ * Start a new span, with the given name, attributes and span kind, by reference to the current/parent span, and run the `block` within
+ */
 suspend inline fun <R> withSpan(
     name: String = getDefaultSpanName(),
     attributes: List<Pair<String, String>> = emptyList(),

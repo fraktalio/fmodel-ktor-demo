@@ -9,6 +9,9 @@ import io.ktor.server.routing.*
 import io.micrometer.prometheus.PrometheusConfig
 import io.micrometer.prometheus.PrometheusMeterRegistry
 
+/**
+ * Configure Prometheus monitoring
+ */
 fun Application.configurePrometheusMonitoring(appMicrometerRegistry: PrometheusMeterRegistry) {
 
     install(MicrometerMetrics) {
@@ -22,5 +25,10 @@ fun Application.configurePrometheusMonitoring(appMicrometerRegistry: PrometheusM
     }
 }
 
+/**
+ * Create Prometheus meter registry
+ * @return [PrometheusMeterRegistry]
+ * @receiver [ResourceScope]
+ */
 suspend fun ResourceScope.meterRegistry(): PrometheusMeterRegistry =
     install({ PrometheusMeterRegistry(PrometheusConfig.DEFAULT) }) { p, _: ExitCase -> p.close() }

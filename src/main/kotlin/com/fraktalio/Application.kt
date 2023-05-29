@@ -15,8 +15,15 @@ import io.ktor.util.logging.*
 import io.r2dbc.spi.ConnectionFactory
 import kotlinx.coroutines.awaitCancellation
 
+/**
+ * Simple logger
+ */
 internal val LOGGER = KtorSimpleLogger("Fraktalio Logger")
 
+/**
+ * Main entry point of the application
+ * Arrow [SuspendApp] is used to gracefully handle termination of the application
+ */
 fun main(): Unit = SuspendApp {
     resourceScope {
         val httpEnv = Env.Http()

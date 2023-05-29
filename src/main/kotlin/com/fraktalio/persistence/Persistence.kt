@@ -23,13 +23,17 @@ import reactor.core.publisher.Mono
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.toJavaDuration
 
+/**
+ * A constructor like function for [ConnectionFactory] that is `pooled`.
+ * @receiver [ResourceScope] for the [Resource] that will be acquired and released gracefully
+ * @param env of type [Env.R2DBCDataSource] - configuration
+ */
 suspend fun ResourceScope.pooledConnectionFactory(
     env: Env.R2DBCDataSource
 ): ConnectionFactory = install({
     val connectionFactory = ConnectionFactories.get(
         builder()
             .option(DRIVER, env.driver)
-            //.option(PROTOCOL, env.protocol)
             .option(HOST, env.host)
             .option(PORT, env.port)
             .option(USER, env.username)
@@ -49,6 +53,11 @@ suspend fun ResourceScope.pooledConnectionFactory(
     connectionFactory.dispose()
 }
 
+/**
+ * A constructor like function for [Connection] that is `pooled`.
+ * @receiver [ConnectionFactory]
+ * @return [Resource]<[Connection]> that will be acquired and released gracefully within the defined [ResourceScope]
+ */
 suspend fun ConnectionFactory.connection(): Resource<Connection> = resource({
     val conn = create().awaitSingle()
     LOGGER.debug("Obtained new connection from the pool: {}", conn)
@@ -60,9 +69,19 @@ suspend fun ConnectionFactory.connection(): Resource<Connection> = resource({
 
 }
 
+/**
+ * A convenient extension function for the Statement / alternative reified function to `bind`
+ * @param name of the parameter
+ * @param value / type of the parameter
+ */
 inline fun <reified T : Any> Statement.bindT(name: String, value: T?) =
     bind(name, if (value != null) Parameters.`in`(value) else Parameters.`in`(T::class.java))
 
+/**
+ * A convenient extension function for the Statement / alternative reified function to `bind`
+ * @param index of the parameter
+ * @param value / type of the parameter
+ */
 inline fun <reified T : Any> Statement.bindT(index: Int, value: T?) =
     bind(index, if (value != null) Parameters.`in`(value) else Parameters.`in`(T::class.java))
 
@@ -79,6 +98,13 @@ private fun <R : Any> Connection.executeSql(
         .flatMapConcat { it.map(f).asFlow() }
 
 
+/**
+ * A convenient extension function for the Resource<Connection> / gracefully acquiring and releasing the connection on the SQL execution
+ * @param sql to be executed
+ * @param f function that maps the [Row] and [RowMetadata] to the desired type
+ * @param prepare function that prepares the [Statement] before execution
+ * @return [Flow]<[R]>
+ */
 fun <R : Any> Resource<Connection>.executeSql(
     sql: String,
     f: (Row, RowMetadata) -> R,
@@ -90,6 +116,11 @@ fun <R : Any> Resource<Connection>.executeSql(
     }
 }
 
+/**
+ * A convenient extension function for the Resource<Connection> / gracefully acquiring and releasing the connection on the SQL execution
+ * @param sql to be executed
+ * @return number of rows updated or null
+ */
 suspend fun Resource<Connection>.alterSQLResource(
     sql: String
 ): Long? = resourceScope {

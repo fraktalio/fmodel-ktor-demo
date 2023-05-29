@@ -12,6 +12,9 @@ import kotlinx.coroutines.withContext
 import java.time.OffsetDateTime
 import java.util.*
 
+/**
+ * An Event entity.
+ */
 internal data class EventEntity(
     val decider: String,
     val deciderId: String,
@@ -25,14 +28,17 @@ internal data class EventEntity(
     val offset: Long? = null
 )
 
+/**
+ * An Event entity mapper / mapping from database row data into the EventEntity.
+ */
 internal val eventMapper: (Row, RowMetadata) -> EventEntity = { row, _ ->
     EventEntity(
-        row.get("decider", String::class.java) ?: "",
-        row.get("decider_id", String::class.java) ?: "",
-        row.get("event", String::class.java) ?: "",
-        row.get("data", ByteArray::class.java) ?: ByteArray(0),
-        row.get("event_id", UUID::class.java) ?: UUID.randomUUID(),
-        row.get("command_id", UUID::class.java) ?: UUID.randomUUID(),
+        row.get("decider", String::class.java) ?: error("decider is null"),
+        row.get("decider_id", String::class.java) ?: error("decider_id is null"),
+        row.get("event", String::class.java) ?: error("event is null"),
+        row.get("data", ByteArray::class.java) ?: error("data is null"),
+        row.get("event_id", UUID::class.java) ?: error("event_id is null"),
+        row.get("command_id", UUID::class.java) ?: error("command_id is null"),
         row.get("previous_id", UUID::class.java),
         row.get("final", String::class.java).toBoolean(),
         row.get("created_at", OffsetDateTime::class.java),
@@ -40,6 +46,9 @@ internal val eventMapper: (Row, RowMetadata) -> EventEntity = { row, _ ->
     )
 }
 
+/**
+ * Event store implementation / Postgres implementation.
+ */
 internal class EventStore(private val connectionFactory: ConnectionFactory) {
     companion object {
         private const val CREATE_TABLE_DECIDERS =
@@ -225,8 +234,10 @@ internal class EventStore(private val connectionFactory: ConnectionFactory) {
     @OptIn(ExperimentalCoroutinesApi::class)
     private val dbDispatcher = Dispatchers.IO.limitedParallelism(10)
 
-    // Initialize schema
-    suspend fun initSchema() = withContext(Dispatchers.IO) {
+    /**
+     * Initialize the schema for the event store database.
+     */
+    suspend fun initSchema() = withContext(dbDispatcher) {
         LOGGER.debug("###### Initializing Event Sourcing schema #######")
         LOGGER.debug(
             "####  Created table Deciders with result {} ####",
@@ -283,6 +294,13 @@ internal class EventStore(private val connectionFactory: ConnectionFactory) {
         LOGGER.debug("###### Event Sourcing schema initialized #######")
     }
 
+    /**
+     * Get all events for a given decider
+     * @param deciderId the decider id
+     * @return a finite flow of events
+     *
+     * Uses [Dispatchers.IO] dispatcher with a limited parallelism
+     */
     fun getEvents(deciderId: String): Flow<EventEntity> = flow {
         connectionFactory.connection()
             .executeSql(
@@ -296,6 +314,13 @@ internal class EventStore(private val connectionFactory: ConnectionFactory) {
             .also { emitAll(it) }
     }.flowOn(dbDispatcher)
 
+    /**
+     * Get the last event for a given decider
+     * @param deciderId the decider id
+     * @return the last event or null if no event exists
+     *
+     * Uses [Dispatchers.IO] dispatcher with a limited parallelism
+     */
     suspend fun getLastEvent(deciderId: String): EventEntity? = withContext(dbDispatcher) {
         connectionFactory.connection()
             .executeSql(
@@ -309,6 +334,13 @@ internal class EventStore(private val connectionFactory: ConnectionFactory) {
             .singleOrNull()
     }
 
+    /**
+     * Append an event to the event store
+     * @param eventEntity the event to append
+     * @return the appended event
+     *
+     * Uses [Dispatchers.IO] dispatcher with a limited parallelism
+     */
     suspend fun append(eventEntity: EventEntity): EventEntity = withContext(dbDispatcher) {
         with(eventEntity) {
             connectionFactory.connection()

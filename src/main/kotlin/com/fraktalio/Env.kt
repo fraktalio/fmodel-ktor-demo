@@ -15,10 +15,18 @@ private const val R2DBC_INITIAL_POOL_SIZE: Int = 10
 private const val R2DBC_MAX_POOL_SIZE: Int = 10
 private const val R2DBC_MAX_IDLE_TIME: Long = 30_000
 
+/**
+ * Environment variables
+ * @property r2dbcDataSource R2DBC data source configuration
+ * @property http HTTP configuration
+ */
 data class Env(
     val r2dbcDataSource: R2DBCDataSource = R2DBCDataSource(),
     val http: Http = Http()
 ) {
+    /**
+     * R2DBC data source configuration
+     */
     data class R2DBCDataSource(
         val driver: String = getenv("R2DBC_DRIVER") ?: R2DBC_DRIVER,
         val username: String = getenv("R2DBC_USERNAME") ?: R2DBC_USERNAME,
@@ -32,6 +40,9 @@ data class Env(
         val maxIdleTime: Long = getenv("R2DBC_MAX_IDLE_TIME")?.toLongOrNull() ?: R2DBC_MAX_IDLE_TIME
     )
 
+    /**
+     * HTTP configuration
+     */
     data class Http(
         val host: String = getenv("HOST") ?: "0.0.0.0",
         val port: Int = getenv("SERVER_PORT")?.toIntOrNull() ?: PORT,
