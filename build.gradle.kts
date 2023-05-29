@@ -1,3 +1,4 @@
+val fmodel_version: String by project
 val kotlin_version: String by project
 val coroutines_version: String by project
 val ktor_version: String by project
@@ -9,6 +10,7 @@ val h2_version: String by project
 val r2dbc_version: String by project
 val prometeus_version: String by project
 val opentelemetry_version: String by project
+val kotlinx_collections_immutable_version: String by project
 
 plugins {
     kotlin("jvm") version "1.8.20"
@@ -38,6 +40,9 @@ repositories {
 }
 
 dependencies {
+    implementation("com.fraktalio.fmodel:domain:$fmodel_version")
+    implementation("com.fraktalio.fmodel:application-vanilla:$fmodel_version")
+    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable-jvm:$kotlinx_collections_immutable_version")
     implementation("io.ktor:ktor-server-core-jvm:$ktor_version")
     implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:$ktor_version")
     implementation("io.ktor:ktor-server-content-negotiation-jvm:$ktor_version")

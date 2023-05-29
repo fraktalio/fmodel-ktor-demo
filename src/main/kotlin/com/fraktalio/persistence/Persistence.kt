@@ -74,16 +74,17 @@ suspend fun ConnectionFactory.connection(): Resource<Connection> = resource({
  * @param name of the parameter
  * @param value / type of the parameter
  */
-inline fun <reified T : Any> Statement.bindT(name: String, value: T?) =
-    bind(name, if (value != null) Parameters.`in`(value) else Parameters.`in`(T::class.java))
+inline fun <reified T : Any> Statement.bindNullable(name: String, value: T?) =
+    if (value != null) bind(name, value) else bindNull(name, T::class.java)
 
 /**
  * A convenient extension function for the Statement / alternative reified function to `bind`
  * @param index of the parameter
  * @param value / type of the parameter
  */
-inline fun <reified T : Any> Statement.bindT(index: Int, value: T?) =
-    bind(index, if (value != null) Parameters.`in`(value) else Parameters.`in`(T::class.java))
+inline fun <reified T : Any> Statement.bindNullable(index: Int, value: T?) =
+    if (value != null) bind(index, value) else bindNull(index, T::class.java)
+
 
 @OptIn(ExperimentalCoroutinesApi::class)
 private fun <R : Any> Connection.executeSql(
@@ -123,13 +124,12 @@ fun <R : Any> Resource<Connection>.executeSql(
  */
 suspend fun Resource<Connection>.alterSQLResource(
     sql: String
-): Long? = resourceScope {
+): Result? = resourceScope {
     val connection = bind()
     connection.createStatement(sql)
         .execute()
         .awaitFirstOrNull()
-        ?.rowsUpdated
-        ?.awaitFirstOrNull()
+
 }
 
 

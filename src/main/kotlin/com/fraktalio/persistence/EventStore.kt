@@ -38,7 +38,7 @@ internal val eventMapper: (Row, RowMetadata) -> EventEntity = { row, _ ->
         row.get("event", String::class.java) ?: error("event is null"),
         row.get("data", ByteArray::class.java) ?: error("data is null"),
         row.get("event_id", UUID::class.java) ?: error("event_id is null"),
-        row.get("command_id", UUID::class.java) ?: error("command_id is null"),
+        row.get("command_id", UUID::class.java),
         row.get("previous_id", UUID::class.java),
         row.get("final", String::class.java).toBoolean(),
         row.get("created_at", OffsetDateTime::class.java),
@@ -53,6 +53,7 @@ internal class EventStore(private val connectionFactory: ConnectionFactory) {
     companion object {
         private const val CREATE_TABLE_DECIDERS =
             """
+                DROP TABLE IF EXISTS deciders CASCADE;
                 CREATE TABLE IF NOT EXISTS deciders
                 (
                     -- decider name/type
@@ -229,6 +230,34 @@ internal class EventStore(private val connectionFactory: ConnectionFactory) {
             ' LANGUAGE plpgsql;
             """
 
+        private const val DATA =
+            """
+                INSERT INTO deciders
+                VALUES ('Restaurant', 'com.fraktalio.domain.RestaurantCreatedEvent');
+                INSERT INTO deciders
+                VALUES ('Restaurant', 'com.fraktalio.domain.RestaurantNotCreatedEvent');
+                INSERT INTO deciders
+                VALUES ('Restaurant', 'com.fraktalio.domain.RestaurantMenuChangedEvent');
+                INSERT INTO deciders
+                VALUES ('Restaurant', 'com.fraktalio.domain.RestaurantMenuNotChangedEvent');
+                INSERT INTO deciders
+                VALUES ('Restaurant', 'com.fraktalio.domain.OrderPlacedAtRestaurantEvent');
+                INSERT INTO deciders
+                VALUES ('Restaurant', 'com.fraktalio.domain.OrderNotPlacedAtRestaurantEvent');
+                INSERT INTO deciders
+                VALUES ('Restaurant', 'com.fraktalio.example.domain.OrderRejectedByRestaurantEvent');
+                
+                INSERT INTO deciders
+                VALUES ('Order', 'com.fraktalio.domain.OrderCreatedEvent');
+                INSERT INTO deciders
+                VALUES ('Order', 'com.fraktalio.domain.OrderPreparedEvent');
+                INSERT INTO deciders
+                VALUES ('Order', 'com.fraktalio.domain.OrderNotPreparedEvent');
+                INSERT INTO deciders
+                VALUES ('Order', 'com.fraktalio.domain.OrderRejectedEvent');
+
+            """
+
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -292,6 +321,11 @@ internal class EventStore(private val connectionFactory: ConnectionFactory) {
             connectionFactory.connection().alterSQLResource(APPEND_EVENT)
         )
         LOGGER.debug("###### Event Sourcing schema initialized #######")
+        LOGGER.debug("###### Inserting data #######")
+        LOGGER.debug(
+            "####  Inserted data with result {} ####",
+            connectionFactory.connection().alterSQLResource(DATA)
+        )
     }
 
     /**
@@ -355,8 +389,8 @@ internal class EventStore(private val connectionFactory: ConnectionFactory) {
                     bind(2, decider)
                     bind(3, deciderId)
                     bind(4, Json.of(data))
-                    bindT(5, commandId)
-                    bindT(6, previousId)
+                    bindNullable(5, commandId)
+                    bindNullable(6, previousId)
                 }
                 .single()
         }
