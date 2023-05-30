@@ -1,4 +1,4 @@
-package com.fraktalio.persistence
+package com.fraktalio.adapter.extension
 
 import com.fraktalio.domain.*
 

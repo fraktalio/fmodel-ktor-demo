@@ -1,4 +1,4 @@
-package com.fraktalio.persistence
+package com.fraktalio.adapter.extension
 
 import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.continuations.ResourceScope

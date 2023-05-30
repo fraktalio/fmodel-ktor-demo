@@ -1,6 +1,10 @@
-package com.fraktalio.persistence
+package com.fraktalio.adapter.persistence
 
 import com.fraktalio.LOGGER
+import com.fraktalio.adapter.extension.alterSQLResource
+import com.fraktalio.adapter.extension.bindNullable
+import com.fraktalio.adapter.extension.connection
+import com.fraktalio.adapter.extension.executeSql
 import io.r2dbc.postgresql.codec.Json
 import io.r2dbc.spi.ConnectionFactory
 import io.r2dbc.spi.Row
@@ -53,7 +57,6 @@ internal class EventStore(private val connectionFactory: ConnectionFactory) {
     companion object {
         private const val CREATE_TABLE_DECIDERS =
             """
-                DROP TABLE IF EXISTS deciders CASCADE;
                 CREATE TABLE IF NOT EXISTS deciders
                 (
                     -- decider name/type
@@ -233,28 +236,38 @@ internal class EventStore(private val connectionFactory: ConnectionFactory) {
         private const val DATA =
             """
                 INSERT INTO deciders
-                VALUES ('Restaurant', 'com.fraktalio.domain.RestaurantCreatedEvent');
+                VALUES ('Restaurant', 'com.fraktalio.domain.RestaurantCreatedEvent')
+                ON CONFLICT DO NOTHING;
                 INSERT INTO deciders
-                VALUES ('Restaurant', 'com.fraktalio.domain.RestaurantNotCreatedEvent');
+                VALUES ('Restaurant', 'com.fraktalio.domain.RestaurantNotCreatedEvent')
+                ON CONFLICT DO NOTHING;
                 INSERT INTO deciders
-                VALUES ('Restaurant', 'com.fraktalio.domain.RestaurantMenuChangedEvent');
+                VALUES ('Restaurant', 'com.fraktalio.domain.RestaurantMenuChangedEvent')
+                ON CONFLICT DO NOTHING;
                 INSERT INTO deciders
                 VALUES ('Restaurant', 'com.fraktalio.domain.RestaurantMenuNotChangedEvent');
+                ON CONFLICT DO NOTHING;
                 INSERT INTO deciders
                 VALUES ('Restaurant', 'com.fraktalio.domain.OrderPlacedAtRestaurantEvent');
+                ON CONFLICT DO NOTHING;
                 INSERT INTO deciders
-                VALUES ('Restaurant', 'com.fraktalio.domain.OrderNotPlacedAtRestaurantEvent');
+                VALUES ('Restaurant', 'com.fraktalio.domain.OrderNotPlacedAtRestaurantEvent')
+                ON CONFLICT DO NOTHING;
                 INSERT INTO deciders
-                VALUES ('Restaurant', 'com.fraktalio.example.domain.OrderRejectedByRestaurantEvent');
-                
+                VALUES ('Restaurant', 'com.fraktalio.example.domain.OrderRejectedByRestaurantEvent')
+                ON CONFLICT DO NOTHING;
                 INSERT INTO deciders
-                VALUES ('Order', 'com.fraktalio.domain.OrderCreatedEvent');
+                VALUES ('Order', 'com.fraktalio.domain.OrderCreatedEvent')
+                ON CONFLICT DO NOTHING;
                 INSERT INTO deciders
-                VALUES ('Order', 'com.fraktalio.domain.OrderPreparedEvent');
+                VALUES ('Order', 'com.fraktalio.domain.OrderPreparedEvent')
+                ON CONFLICT DO NOTHING;
                 INSERT INTO deciders
-                VALUES ('Order', 'com.fraktalio.domain.OrderNotPreparedEvent');
+                VALUES ('Order', 'com.fraktalio.domain.OrderNotPreparedEvent')
+                ON CONFLICT DO NOTHING;
                 INSERT INTO deciders
-                VALUES ('Order', 'com.fraktalio.domain.OrderRejectedEvent');
+                VALUES ('Order', 'com.fraktalio.domain.OrderRejectedEvent')
+                ON CONFLICT DO NOTHING;
 
             """
 

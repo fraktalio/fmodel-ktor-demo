@@ -1,7 +1,10 @@
-package com.fraktalio.persistence
+package com.fraktalio.adapter.persistence
 
 
 import com.fraktalio.LOGGER
+import com.fraktalio.adapter.extension.decider
+import com.fraktalio.adapter.extension.deciderId
+import com.fraktalio.adapter.extension.event
 import com.fraktalio.application.AggregateEventRepository
 import com.fraktalio.domain.Command
 import com.fraktalio.domain.Event

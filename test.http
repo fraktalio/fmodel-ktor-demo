@@ -4,19 +4,19 @@ Content-Type: application/json
 
 {
   "type": "com.fraktalio.domain.CreateRestaurantCommand",
-  "identifier": "10fca0c4-3376-4ca2-a7c2-db2b75c250e1",
+  "identifier": "10fca0c4-3376-4ca2-a7c2-db2b75c250a1",
   "name": "Big Snack",
   "menu": {
-    "menuId": "10fca0c4-3376-4ca2-a7c2-db2b75c250e2",
+    "menuId": "10fca0c4-3376-4ca2-a7c2-db2b75c250a2",
     "cuisine": "SERBIAN",
     "menuItems": [
       {
-        "menuItemId": "10fca0c4-3376-4ca2-a7c2-db2b75c250e3",
+        "menuItemId": "10fca0c4-3376-4ca2-a7c2-db2b75c250a3",
         "name": "Cevapi",
         "price": 300
       },
       {
-        "menuItemId": "10fca0c4-3376-4ca2-a7c2-db2b75c250e4",
+        "menuItemId": "10fca0c4-3376-4ca2-a7c2-db2b75c250a4",
         "name": "Pljeskavica",
         "price": 400
       }

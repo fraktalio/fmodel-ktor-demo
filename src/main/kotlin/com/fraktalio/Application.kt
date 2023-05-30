@@ -3,15 +3,16 @@ package com.fraktalio
 import arrow.continuations.SuspendApp
 import arrow.continuations.ktor.server
 import arrow.fx.coroutines.resourceScope
+import com.fraktalio.adapter.extension.pooledConnectionFactory
+import com.fraktalio.adapter.persistence.AggregateEventRepositoryImpl
+import com.fraktalio.adapter.persistence.EventStore
+import com.fraktalio.adapter.persistence.ViewStore
 import com.fraktalio.application.Aggregate
 import com.fraktalio.application.aggregate
 import com.fraktalio.domain.orderDecider
 import com.fraktalio.domain.orderSaga
 import com.fraktalio.domain.restaurantDecider
 import com.fraktalio.domain.restaurantSaga
-import com.fraktalio.persistence.AggregateEventRepositoryImpl
-import com.fraktalio.persistence.EventStore
-import com.fraktalio.persistence.pooledConnectionFactory
 import com.fraktalio.plugins.*
 import com.fraktalio.routes.homeRouting
 import com.fraktalio.routes.restaurantRouting
@@ -36,6 +37,7 @@ fun main(): Unit = SuspendApp {
         val meterRegistry = meterRegistry()
         val connectionFactory: ConnectionFactory = pooledConnectionFactory(Env.R2DBCDataSource())
         val eventStore = EventStore(connectionFactory).apply { initSchema() }
+        val viewStore = ViewStore(connectionFactory).apply { initSchema() }
         val aggregate = aggregate(
             orderDecider(),
             restaurantDecider(),
