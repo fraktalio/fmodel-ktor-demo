@@ -1,9 +1,11 @@
 package com.fraktalio.adapter.persistence
 
+import com.fraktalio.LOGGER
 import com.fraktalio.application.MaterializedViewState
 import com.fraktalio.application.MaterializedViewStateRepository
 import com.fraktalio.domain.*
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.withContext
@@ -14,26 +16,56 @@ import java.util.*
 /**
  * View repository implementation
  *
- * @property viewStore
  * @constructor Create Materialized View repository impl
  *
  * @author Иван Дугалић / Ivan Dugalic / @idugalic
  */
 
-internal open class MaterializedViewStateRepositoryImpl(
-    private val viewStore: ViewStore
-) : MaterializedViewStateRepository {
+internal open class MaterializedViewStateRepositoryImpl : MaterializedViewStateRepository {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private val dbDispatcher = Dispatchers.IO.limitedParallelism(10)
+    val mockResult = MaterializedViewState(
+        RestaurantViewState(
+            RestaurantId(UUID.randomUUID()),
+            RestaurantName("name"),
+            RestaurantMenu(
+                listOf<MenuItem>(
+                    MenuItem(
+                        MenuItemId(UUID.randomUUID().toString()),
+                        MenuItemName("name"),
+                        Money(BigDecimal.ONE)
+                    )
+                ).toImmutableList()
+            )
+        ),
+        OrderViewState(
+            OrderId(UUID.randomUUID()),
+            RestaurantId(UUID.randomUUID()),
+            OrderStatus.PREPARED,
+            listOf<OrderLineItem>(
+                OrderLineItem(
+                    OrderLineItemId(UUID.randomUUID().toString()),
+                    OrderLineItemQuantity(2),
+                    MenuItemId("menuItemId"),
+                    MenuItemName("menuItemId")
+                )
+            ).toImmutableList()
+        )
+    )
+
     override suspend fun Event?.fetchState(): MaterializedViewState =
         withContext(dbDispatcher) {
-            TODO("Event?.fetchState() - Not yet implemented")
+            LOGGER.debug("view / event-handler: fetchState({}) started ...", this@fetchState)
+            mockResult
+            //TODO("Event?.fetchState() - Not yet implemented")
         }
 
     override suspend fun MaterializedViewState.save(): MaterializedViewState =
         withContext(dbDispatcher) {
-            TODO("MaterializedViewState.save() - Not yet implemented")
+            LOGGER.debug("view / event-handler: save({}) started ... #########", this@save)
+            mockResult
+            //TODO("MaterializedViewState.save() - Not yet implemented")
         }
 
 

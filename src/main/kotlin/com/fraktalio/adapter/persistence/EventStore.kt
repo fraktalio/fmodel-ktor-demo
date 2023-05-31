@@ -236,38 +236,37 @@ internal class EventStore(private val connectionFactory: ConnectionFactory) {
         private const val DATA =
             """
                 INSERT INTO deciders
-                VALUES ('Restaurant', 'com.fraktalio.domain.RestaurantCreatedEvent')
-                ON CONFLICT DO NOTHING;
+                VALUES ('Restaurant', 'com.fraktalio.domain.RestaurantCreatedEvent');
+                
                 INSERT INTO deciders
-                VALUES ('Restaurant', 'com.fraktalio.domain.RestaurantNotCreatedEvent')
-                ON CONFLICT DO NOTHING;
+                VALUES ('Restaurant', 'com.fraktalio.domain.RestaurantNotCreatedEvent');
+                
                 INSERT INTO deciders
-                VALUES ('Restaurant', 'com.fraktalio.domain.RestaurantMenuChangedEvent')
-                ON CONFLICT DO NOTHING;
+                VALUES ('Restaurant', 'com.fraktalio.domain.RestaurantMenuChangedEvent');
+                
                 INSERT INTO deciders
                 VALUES ('Restaurant', 'com.fraktalio.domain.RestaurantMenuNotChangedEvent');
-                ON CONFLICT DO NOTHING;
+                
                 INSERT INTO deciders
                 VALUES ('Restaurant', 'com.fraktalio.domain.OrderPlacedAtRestaurantEvent');
-                ON CONFLICT DO NOTHING;
+                
                 INSERT INTO deciders
-                VALUES ('Restaurant', 'com.fraktalio.domain.OrderNotPlacedAtRestaurantEvent')
-                ON CONFLICT DO NOTHING;
+                VALUES ('Restaurant', 'com.fraktalio.domain.OrderNotPlacedAtRestaurantEvent');
+                
                 INSERT INTO deciders
-                VALUES ('Restaurant', 'com.fraktalio.example.domain.OrderRejectedByRestaurantEvent')
-                ON CONFLICT DO NOTHING;
+                VALUES ('Restaurant', 'com.fraktalio.example.domain.OrderRejectedByRestaurantEvent');
+                                
                 INSERT INTO deciders
-                VALUES ('Order', 'com.fraktalio.domain.OrderCreatedEvent')
-                ON CONFLICT DO NOTHING;
+                VALUES ('Order', 'com.fraktalio.domain.OrderCreatedEvent');
+                
                 INSERT INTO deciders
-                VALUES ('Order', 'com.fraktalio.domain.OrderPreparedEvent')
-                ON CONFLICT DO NOTHING;
+                VALUES ('Order', 'com.fraktalio.domain.OrderPreparedEvent');
+                
                 INSERT INTO deciders
-                VALUES ('Order', 'com.fraktalio.domain.OrderNotPreparedEvent')
-                ON CONFLICT DO NOTHING;
+                VALUES ('Order', 'com.fraktalio.domain.OrderNotPreparedEvent');
+                
                 INSERT INTO deciders
-                VALUES ('Order', 'com.fraktalio.domain.OrderRejectedEvent')
-                ON CONFLICT DO NOTHING;
+                VALUES ('Order', 'com.fraktalio.domain.OrderRejectedEvent');
 
             """
 
@@ -280,65 +279,22 @@ internal class EventStore(private val connectionFactory: ConnectionFactory) {
      * Initialize the schema for the event store database.
      */
     suspend fun initSchema() = withContext(dbDispatcher) {
-        LOGGER.debug("###### Initializing Event Sourcing schema #######")
-        LOGGER.debug(
-            "####  Created table Deciders with result {} ####",
-            connectionFactory.connection().alterSQLResource(CREATE_TABLE_DECIDERS)
-        )
-        LOGGER.debug(
-            "####  Created table Events with result {} ####",
-            connectionFactory.connection().alterSQLResource(CREATE_TABLE_EVENTS)
-        )
-        LOGGER.debug(
-            "####  Created index decider_index with result {} ####",
-            connectionFactory.connection().alterSQLResource(DECIDER_INDEX)
-        )
-        LOGGER.debug(
-            "####  Created rule ignore_delete_decider_events with result {} ####",
-            connectionFactory.connection().alterSQLResource(IGNORE_DELETE_DECIDER_EVENTS)
-        )
-        LOGGER.debug(
-            "####  Created rule ignore_update_decider_events with result {} ####",
-            connectionFactory.connection().alterSQLResource(IGNORE_UPDATE_DECIDER_EVENTS)
-        )
-        LOGGER.debug(
-            "####  Created rule ignore_delete_events with result {} ####",
-            connectionFactory.connection().alterSQLResource(IGNORE_DELETE_EVENTS)
-        )
-        LOGGER.debug(
-            "####  Created rule ignore_update_events with result {} ####",
-            connectionFactory.connection().alterSQLResource(IGNORE_UPDATE_EVENTS)
-        )
-        LOGGER.debug(
-            "####  Created function check_final_event_for_decider with result {} ####",
-            connectionFactory.connection().alterSQLResource(CHECK_FINAL_EVENT_FOR_DECIDER)
-        )
-        LOGGER.debug(
-            "####  Created function check_first_event_for_decider with result {} ####",
-            connectionFactory.connection().alterSQLResource(CHECK_FIRST_EVENT_FOR_DECIDER)
-        )
-        LOGGER.debug(
-            "####  Created function check_previous_id_in_same_decider with result {} ####",
-            connectionFactory.connection().alterSQLResource(CHECK_PREVIOUS_ID_IN_SAME_DECIDER)
-        )
-        LOGGER.debug(
-            "####  Created function get_events with result {} ####",
-            connectionFactory.connection().alterSQLResource(GET_EVENTS_BY_DECIDER)
-        )
-        LOGGER.debug(
-            "####  Created function get_last_event with result {} ####",
-            connectionFactory.connection().alterSQLResource(GET_LAST_EVENT_BY_DECIDER)
-        )
-        LOGGER.debug(
-            "####  Created function append_event with result {} ####",
-            connectionFactory.connection().alterSQLResource(APPEND_EVENT)
-        )
-        LOGGER.debug("###### Event Sourcing schema initialized #######")
-        LOGGER.debug("###### Inserting data #######")
-        LOGGER.debug(
-            "####  Inserted data with result {} ####",
-            connectionFactory.connection().alterSQLResource(DATA)
-        )
+        LOGGER.debug("# Initializing Event Sourcing schema #")
+        connectionFactory.connection().alterSQLResource(CREATE_TABLE_DECIDERS)
+        connectionFactory.connection().alterSQLResource(CREATE_TABLE_EVENTS)
+        connectionFactory.connection().alterSQLResource(DECIDER_INDEX)
+        connectionFactory.connection().alterSQLResource(IGNORE_DELETE_DECIDER_EVENTS)
+        connectionFactory.connection().alterSQLResource(IGNORE_UPDATE_DECIDER_EVENTS)
+        connectionFactory.connection().alterSQLResource(IGNORE_DELETE_EVENTS)
+        connectionFactory.connection().alterSQLResource(IGNORE_UPDATE_EVENTS)
+        connectionFactory.connection().alterSQLResource(CHECK_FINAL_EVENT_FOR_DECIDER)
+        connectionFactory.connection().alterSQLResource(CHECK_FIRST_EVENT_FOR_DECIDER)
+        connectionFactory.connection().alterSQLResource(CHECK_PREVIOUS_ID_IN_SAME_DECIDER)
+        connectionFactory.connection().alterSQLResource(GET_EVENTS_BY_DECIDER)
+        connectionFactory.connection().alterSQLResource(GET_LAST_EVENT_BY_DECIDER)
+        connectionFactory.connection().alterSQLResource(APPEND_EVENT)
+        LOGGER.debug("## Inserting data in Event Sourcing schema ##")
+        connectionFactory.connection().alterSQLResource(DATA)
     }
 
     /**

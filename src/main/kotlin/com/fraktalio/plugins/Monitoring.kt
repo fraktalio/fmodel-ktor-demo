@@ -12,7 +12,7 @@ import io.micrometer.prometheus.PrometheusMeterRegistry
 /**
  * Configure Prometheus monitoring
  */
-fun Application.configurePrometheusMonitoring(appMicrometerRegistry: PrometheusMeterRegistry) {
+fun Application.configureMonitoring(appMicrometerRegistry: PrometheusMeterRegistry) {
 
     install(MicrometerMetrics) {
         registry = appMicrometerRegistry

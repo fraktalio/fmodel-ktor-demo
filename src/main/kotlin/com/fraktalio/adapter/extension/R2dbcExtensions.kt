@@ -60,12 +60,12 @@ suspend fun ResourceScope.pooledConnectionFactory(
  */
 suspend fun ConnectionFactory.connection(): Resource<Connection> = resource({
     val conn = create().awaitSingle()
-    LOGGER.debug("Obtained new connection from the pool: {}", conn)
+    LOGGER.trace("Obtained new connection from the pool: {}", conn)
     conn
 }) { connection, exitCase ->
-    LOGGER.debug("Releasing connection {} with exit: {}", connection, exitCase)
+    LOGGER.trace("Releasing connection {} with exit: {}", connection, exitCase)
     (connection.close() as Mono).awaitSingleOrNull()
-    LOGGER.debug("Released connection {}", connection)
+    LOGGER.trace("Released connection {}", connection)
 
 }
 

@@ -114,7 +114,7 @@ internal fun LockEntity.asLock() = Lock(
     updatedAt?.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
 )
 
-internal class ViewStore(private val connectionFactory: ConnectionFactory) {
+internal class EventStream(private val connectionFactory: ConnectionFactory) {
     companion object {
         private const val CREATE_TABLE_VIEWS =
             """
@@ -376,7 +376,7 @@ internal class ViewStore(private val connectionFactory: ConnectionFactory) {
             """
                 INSERT INTO views
                 VALUES ('view', 500) 
-                ON CONFLICT DO NOTHING;
+                ON CONFLICT (view) DO NOTHING;
             """
     }
 
@@ -384,60 +384,21 @@ internal class ViewStore(private val connectionFactory: ConnectionFactory) {
     private val dbDispatcher = Dispatchers.IO.limitedParallelism(10)
 
     suspend fun initSchema() = withContext(dbDispatcher) {
-        LOGGER.debug("###### Initializing View schema #######")
-        LOGGER.debug(
-            "####  Created table Views with result {} ####",
-            connectionFactory.connection().alterSQLResource(CREATE_TABLE_VIEWS)
-        )
-        LOGGER.debug(
-            "####  Created table Locks with result {} ####",
-            connectionFactory.connection().alterSQLResource(CREATE_TABLE_LOCKS)
-        )
-        LOGGER.debug(
-            "####  Created Lock Index with result {} ####",
-            connectionFactory.connection().alterSQLResource(CREATE_LOCK_INDEX)
-        )
-        LOGGER.debug(
-            "####  Created BEFORE_UPDATE_VIEWS with result {} ####",
-            connectionFactory.connection().alterSQLResource(BEFORE_UPDATE_VIEWS)
-        )
-        LOGGER.debug(
-            "####  Created BEFORE_UPDATE_LOCKS with result {} ####",
-            connectionFactory.connection().alterSQLResource(BEFORE_UPDATE_LOCKS)
-        )
-        LOGGER.debug(
-            "####  Created ON_INSERT_ON_EVENTS with result {} ####",
-            connectionFactory.connection().alterSQLResource(ON_INSERT_ON_EVENTS)
-        )
-        LOGGER.debug(
-            "####  Created ON_INSERT_OR_UPDATE_ON_VIEWS with result {} ####",
-            connectionFactory.connection().alterSQLResource(ON_INSERT_OR_UPDATE_ON_VIEWS)
-        )
-        LOGGER.debug(
-            "####  Created REGISTER_VIEW with result {} ####",
-            connectionFactory.connection().alterSQLResource(REGISTER_VIEW)
-        )
-        LOGGER.debug(
-            "####  Created STREAM_EVENTS with result {} ####",
-            connectionFactory.connection().alterSQLResource(STREAM_EVENTS)
-        )
-        LOGGER.debug(
-            "####  Created ACK_EVENT with result {} ####",
-            connectionFactory.connection().alterSQLResource(ACK_EVENT)
-        )
-        LOGGER.debug(
-            "####  Created NACK_EVENT with result {} ####",
-            connectionFactory.connection().alterSQLResource(NACK_EVENT)
-        )
-        LOGGER.debug(
-            "####  Created SCHEDULE_NACK with result {} ####",
-            connectionFactory.connection().alterSQLResource(SCHEDULE_NACK)
-        )
-        LOGGER.debug("###### Inserting data #######")
-        LOGGER.debug(
-            "####  Inserted data with result {} ####",
-            connectionFactory.connection().alterSQLResource(DATA)
-        )
+        LOGGER.debug("# Initializing View schema #")
+        connectionFactory.connection().alterSQLResource(CREATE_TABLE_VIEWS)
+        connectionFactory.connection().alterSQLResource(CREATE_TABLE_LOCKS)
+        connectionFactory.connection().alterSQLResource(CREATE_LOCK_INDEX)
+        connectionFactory.connection().alterSQLResource(BEFORE_UPDATE_VIEWS)
+        connectionFactory.connection().alterSQLResource(BEFORE_UPDATE_LOCKS)
+        connectionFactory.connection().alterSQLResource(ON_INSERT_ON_EVENTS)
+        connectionFactory.connection().alterSQLResource(ON_INSERT_OR_UPDATE_ON_VIEWS)
+        connectionFactory.connection().alterSQLResource(REGISTER_VIEW)
+        connectionFactory.connection().alterSQLResource(STREAM_EVENTS)
+        connectionFactory.connection().alterSQLResource(ACK_EVENT)
+        connectionFactory.connection().alterSQLResource(NACK_EVENT)
+        connectionFactory.connection().alterSQLResource(SCHEDULE_NACK)
+        LOGGER.debug("## Inserting data in View schema ##")
+        connectionFactory.connection().alterSQLResource(DATA)
     }
 
 
@@ -452,16 +413,16 @@ internal class ViewStore(private val connectionFactory: ConnectionFactory) {
         .executeSql(
             """
               INSERT INTO "views"
-              ("view", "pooling_delay", "start_at") VALUES (:view, :poolingDelayMilliseconds, :startAt)
+              ("view", "pooling_delay", "start_at") VALUES ($1, $2, $3)
               ON CONFLICT ON CONSTRAINT "views_pkey"
               DO UPDATE SET "updated_at" = NOW(), "start_at" = EXCLUDED."start_at", "pooling_delay" = EXCLUDED."pooling_delay"
               RETURNING *
             """,
             viewMapper
         ) {
-            bind("view", view)
-            bind("poolingDelayMilliseconds", poolingDelayMilliseconds)
-            bind("startAt", startAt)
+            bind(0, view)
+            bind(1, poolingDelayMilliseconds)
+            bind(2, startAt)
         }
         .single()
         .asView()
@@ -482,10 +443,10 @@ internal class ViewStore(private val connectionFactory: ConnectionFactory) {
         connectionFactory
             .connection()
             .executeSql(
-                "select * from views where view = :view",
+                "select * from views where view = $1",
                 viewMapper
             ) {
-                bind("view", view)
+                bind(0, view)
             }
             .singleOrNull()
             ?.asView()
@@ -511,12 +472,12 @@ internal class ViewStore(private val connectionFactory: ConnectionFactory) {
                 connectionFactory
                     .connection()
                     .executeSql(
-                        "SELECT * FROM ack_event(:view, :deciderId, :offset)",
+                        "SELECT * FROM ack_event($1, $2, $3)",
                         lockMapper
                     ) {
-                        bind("offset", action.offset)
-                        bind("view", view)
-                        bind("deciderId", action.deciderId)
+                        bind(2, action.offset)
+                        bind(0, view)
+                        bind(1, action.deciderId)
                     }
                     .singleOrNull()
                     ?.asLock()
@@ -525,11 +486,11 @@ internal class ViewStore(private val connectionFactory: ConnectionFactory) {
                 connectionFactory
                     .connection()
                     .executeSql(
-                        "SELECT * FROM nack_event(:view, :deciderId)",
+                        "SELECT * FROM nack_event($1, $2)",
                         lockMapper
                     ) {
-                        bind("view", view)
-                        bind("deciderId", action.deciderId)
+                        bind(0, view)
+                        bind(1, action.deciderId)
                     }
                     .singleOrNull()
                     ?.asLock()
@@ -538,12 +499,12 @@ internal class ViewStore(private val connectionFactory: ConnectionFactory) {
                 connectionFactory
                     .connection()
                     .executeSql(
-                        "SELECT * FROM schedule_nack_event(:view, :deciderId, :milliseconds)",
+                        "SELECT * FROM schedule_nack_event($1, $2, $3)",
                         lockMapper
                     ) {
-                        bind("view", view)
-                        bind("milliseconds", action.milliseconds)
-                        bind("deciderId", action.deciderId)
+                        bind(0, view)
+                        bind(2, action.milliseconds)
+                        bind(1, action.deciderId)
                     }
                     .singleOrNull()
                     ?.asLock()
@@ -556,10 +517,10 @@ internal class ViewStore(private val connectionFactory: ConnectionFactory) {
         connectionFactory
             .connection()
             .executeSql(
-                "SELECT * FROM stream_events(:view)",
+                "SELECT * FROM stream_events($1)",
                 eventMapper
             ) {
-                bind("view", view)
+                bind(0, view)
             }.singleOrNull()?.let { Pair(Json.decodeFromString(it.data.decodeToString()), it.offset ?: -1) }
 
     private fun poolEvents(view: String, poolingDelayMilliseconds: Long): Flow<Pair<Event, Long>> =
@@ -586,29 +547,30 @@ internal class ViewStore(private val connectionFactory: ConnectionFactory) {
             }
         }
 
-    suspend fun startStreaming(view: String, materializedView: MaterializedView<MaterializedViewState, Event?>) {
+    suspend fun registerMaterializedViewAndStartPooling(
+        view: String,
+        materializedView: MaterializedView<MaterializedViewState, Event?>
+    ) {
         coroutineScope {
-            launch {
-                val actions = Channel<Action>()
-                streamEvents(view, actions.receiveAsFlow())
-                    .onStart {
-                        launch {
-                            actions.send(Ack(-1, "start"))
-                        }
+            val actions = Channel<Action>()
+            streamEvents(view, actions.receiveAsFlow())
+                .onStart {
+                    launch {
+                        actions.send(Ack(-1, "start"))
                     }
-                    .onEach {
-                        try {
-                            materializedView.handle(it.first)
-                            actions.send(Ack(it.second, it.first.deciderId()))
-                        } catch (e: Exception) {
-                            actions.send(ScheduleNack(10000, it.first.deciderId()))
-                        }
+                }
+                .onEach {
+                    try {
+                        materializedView.handle(it.first)
+                        actions.send(Ack(it.second, it.first.deciderId()))
+                    } catch (e: Exception) {
+                        actions.send(ScheduleNack(10000, it.first.deciderId()))
                     }
-                    .retry(5) { cause ->
-                        cause !is CancellationException
-                    }
-                    .collect()
-            }
+                }
+                .retry(5) { cause ->
+                    cause !is CancellationException
+                }
+                .collect()
         }
     }
 }
