@@ -564,6 +564,7 @@ internal class EventStream(private val connectionFactory: ConnectionFactory) {
                         materializedView.handle(it.first)
                         actions.send(Ack(it.second, it.first.deciderId()))
                     } catch (e: Exception) {
+                        LOGGER.error("Error while handling event, retrying in 10 seconds ${it.first}", e)
                         actions.send(ScheduleNack(10000, it.first.deciderId()))
                     }
                 }

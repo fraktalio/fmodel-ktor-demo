@@ -2,6 +2,7 @@ package com.fraktalio.domain
 
 import com.fraktalio.fmodel.domain.View
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.serialization.Serializable
 
 /**
  * A convenient type alias for View<RestaurantOrderViewState?,OrderEvent?>
@@ -38,6 +39,7 @@ fun orderView() = OrderView(
  * @property lineItems
  * @constructor Creates [OrderViewState]
  */
+@Serializable
 data class OrderViewState(
     val id: OrderId,
     val restaurantId: RestaurantId,

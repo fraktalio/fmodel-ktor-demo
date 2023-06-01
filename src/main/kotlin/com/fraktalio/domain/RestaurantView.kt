@@ -1,6 +1,7 @@
 package com.fraktalio.domain
 
 import com.fraktalio.fmodel.domain.View
+import kotlinx.serialization.Serializable
 
 /**
  * A convenient type alias for View<RestaurantViewState?, RestaurantEvent?>
@@ -36,6 +37,7 @@ fun restaurantView() = RestaurantView(
  * @property menu Current [RestaurantMenu] of the restaurant
  * @constructor Creates [RestaurantViewState]
  */
+@Serializable
 data class RestaurantViewState(
     val id: RestaurantId,
     val name: RestaurantName,

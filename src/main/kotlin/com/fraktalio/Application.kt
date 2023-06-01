@@ -42,19 +42,21 @@ fun main(): Unit = SuspendApp {
         val connectionFactory: ConnectionFactory = pooledConnectionFactory(Env.R2DBCDataSource())
         val eventStore = EventStore(connectionFactory).apply { initSchema() }
         val eventStream = EventStream(connectionFactory).apply { initSchema() }
+        val aggregateEventRepository = AggregateEventRepositoryImpl(eventStore)
+        val materializedViewStateRepository =
+            MaterializedViewStateRepositoryImpl(connectionFactory).apply { initSchema() }
         val aggregate = aggregate(
             orderDecider(),
             restaurantDecider(),
             orderSaga(),
             restaurantSaga(),
-            AggregateEventRepositoryImpl(eventStore)
+            aggregateEventRepository
         )
         val materializedView = materializedView(
             restaurantView(),
             orderView(),
-            MaterializedViewStateRepositoryImpl()
-        )
-            .also { launch { eventStream.registerMaterializedViewAndStartPooling("view", it) } }
+            materializedViewStateRepository
+        ).also { launch { eventStream.registerMaterializedViewAndStartPooling("view", it) } }
 
 
         server(CIO, host = httpEnv.host, port = httpEnv.port) {
