@@ -1,6 +1,8 @@
 package com.fraktalio.routes
 
 import com.fraktalio.LOGGER
+import com.fraktalio.adapter.persistence.OrderRepository
+import com.fraktalio.adapter.persistence.RestaurantRepository
 import com.fraktalio.application.Aggregate
 import com.fraktalio.domain.Command
 import com.fraktalio.domain.Event
@@ -17,7 +19,11 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 
 @OptIn(FlowPreview::class)
-fun Application.restaurantRouting(aggregate: Aggregate) {
+fun Application.restaurantRouting(
+    aggregate: Aggregate,
+    restaurantRepository: RestaurantRepository,
+    orderRepository: OrderRepository
+) {
 
     routing {
         post("/commands") {
@@ -30,6 +36,24 @@ fun Application.restaurantRouting(aggregate: Aggregate) {
             } catch (e: Exception) {
                 LOGGER.error("Error: ${e.message}", e)
                 withSpan("response-exception") { call.respond(HttpStatusCode.BadRequest) }
+            }
+        }
+        get("/restaurants") {
+            try {
+                val restaurants = withSpan("restaurant-findAll") { restaurantRepository.findAll().toList() }
+                withSpan("restaurant-findAll-response") { call.respond(restaurants) }
+            } catch (e: Exception) {
+                LOGGER.error("Error: ${e.message}", e)
+                withSpan("restaurant-findAll-exception") { call.respond(HttpStatusCode.BadRequest) }
+            }
+        }
+        get("/orders") {
+            try {
+                val orders = withSpan("order-findAll") { orderRepository.findAll().toList() }
+                withSpan("order-findAll-response") { call.respond(orders) }
+            } catch (e: Exception) {
+                LOGGER.error("Error: ${e.message}", e)
+                withSpan("order-findAll-exception") { call.respond(HttpStatusCode.BadRequest) }
             }
         }
     }

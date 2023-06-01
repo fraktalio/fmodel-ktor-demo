@@ -4,12 +4,8 @@ import arrow.continuations.SuspendApp
 import arrow.continuations.ktor.server
 import arrow.fx.coroutines.resourceScope
 import com.fraktalio.adapter.extension.pooledConnectionFactory
-import com.fraktalio.adapter.persistence.AggregateEventRepositoryImpl
-import com.fraktalio.adapter.persistence.EventStore
-import com.fraktalio.adapter.persistence.EventStream
-import com.fraktalio.adapter.persistence.MaterializedViewStateRepositoryImpl
+import com.fraktalio.adapter.persistence.*
 import com.fraktalio.application.Aggregate
-import com.fraktalio.application.OrderRestaurantMaterializedView
 import com.fraktalio.application.aggregate
 import com.fraktalio.application.materializedView
 import com.fraktalio.domain.*
@@ -40,11 +36,9 @@ fun main(): Unit = SuspendApp {
         val httpEnv = Env.Http()
         val meterRegistry = meterRegistry()
         val connectionFactory: ConnectionFactory = pooledConnectionFactory(Env.R2DBCDataSource())
+        // ### Command Side - Event Sourcing ###
         val eventStore = EventStore(connectionFactory).apply { initSchema() }
-        val eventStream = EventStream(connectionFactory).apply { initSchema() }
         val aggregateEventRepository = AggregateEventRepositoryImpl(eventStore)
-        val materializedViewStateRepository =
-            MaterializedViewStateRepositoryImpl(connectionFactory).apply { initSchema() }
         val aggregate = aggregate(
             orderDecider(),
             restaurantDecider(),
@@ -52,25 +46,34 @@ fun main(): Unit = SuspendApp {
             restaurantSaga(),
             aggregateEventRepository
         )
+        // ### Query Side - Event Streaming & Materialized View ###
+        val eventStream = EventStream(connectionFactory).apply { initSchema() }
+        val restaurantRepository = RestaurantRepository(connectionFactory).apply { initSchema() }
+        val orderRepository = OrderRepository(connectionFactory).apply { initSchema() }
+        val materializedViewStateRepository =
+            MaterializedViewStateRepositoryImpl(restaurantRepository, orderRepository)
         val materializedView = materializedView(
             restaurantView(),
             orderView(),
             materializedViewStateRepository
         ).also { launch { eventStream.registerMaterializedViewAndStartPooling("view", it) } }
 
-
         server(CIO, host = httpEnv.host, port = httpEnv.port) {
             configureSerialization()
             configureMonitoring(meterRegistry)
             configureTracing()
 
-            module(aggregate, materializedView)
+            module(aggregate, restaurantRepository, orderRepository)
         }
         awaitCancellation()
     }
 }
 
-fun Application.module(aggregate: Aggregate, materializedView: OrderRestaurantMaterializedView) {
+fun Application.module(
+    aggregate: Aggregate,
+    restaurantRepository: RestaurantRepository,
+    orderRepository: OrderRepository
+) {
     homeRouting()
-    restaurantRouting(aggregate)
+    restaurantRouting(aggregate, restaurantRepository, orderRepository)
 }
