@@ -92,7 +92,7 @@ class OrderRepository(private val connectionFactory: ConnectionFactory) {
         connectionFactory.connection()
             .executeSql(
                 """
-                SELECT * FROM restaurants
+                SELECT * FROM orders
                 """,
                 orderMapper
             )

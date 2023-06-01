@@ -1,10 +1,10 @@
-### Send POST Command
+### Send POST Command - Create Restaurant
 POST http://localhost:8080/commands
 Content-Type: application/json
 
 {
   "type": "com.fraktalio.domain.CreateRestaurantCommand",
-  "identifier": "10fca0c4-3376-4ca2-a7c2-db2b75c250b1",
+  "identifier": "10fca0c4-3376-4ca2-a7c2-db2b75c250a1",
   "name": "Big Snack",
   "menu": {
     "menuId": "10fca0c4-3376-4ca2-a7c2-db2b75c250a2",
@@ -23,3 +23,35 @@ Content-Type: application/json
     ]
   }
 }
+
+### Send POST Command - Place the Order
+POST http://localhost:8080/commands
+Content-Type: application/json
+
+{
+  "type": "com.fraktalio.domain.PlaceOrderCommand",
+  "identifier": "10fca0c4-3376-4ca2-a7c2-db2b75c250a1",
+  "orderIdentifier": "10fca0c4-3376-4ca2-a7c2-db2b75c250a5",
+  "lineItems": [
+    {
+      "id": "10fca0c4-3376-4ca2-a7c2-db2b75c250a6",
+      "menuItemId": "10fca0c4-3376-4ca2-a7c2-db2b75c250a3",
+      "name": "Cevapi",
+      "quantity": 10
+    },
+    {
+      "id": "10fca0c4-3376-4ca2-a7c2-db2b75c250a7",
+      "menuItemId": "10fca0c4-3376-4ca2-a7c2-db2b75c250a4",
+      "name": "Pljeskavica",
+      "quantity": 1
+    }
+  ]
+}
+
+### GET all restaurants
+GET http://localhost:8080/restaurants
+
+### GET all orders
+GET http://localhost:8080/orders
+
+

@@ -44,5 +44,6 @@ data class OrderViewState(
     val id: OrderId,
     val restaurantId: RestaurantId,
     val status: OrderStatus,
+    @Serializable(with = ImmutableListSerializer::class)
     val lineItems: ImmutableList<OrderLineItem>
 )

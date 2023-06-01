@@ -52,6 +52,8 @@ fun main(): Unit = SuspendApp {
         val orderRepository = OrderRepository(connectionFactory).apply { initSchema() }
         val materializedViewStateRepository =
             MaterializedViewStateRepositoryImpl(restaurantRepository, orderRepository)
+
+        @Suppress("UNUSED_VARIABLE")
         val materializedView = materializedView(
             restaurantView(),
             orderView(),
