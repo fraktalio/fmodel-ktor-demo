@@ -126,7 +126,7 @@ Build OCI (docker) image:
 ./gradlew publishImageToLocalRegistry
 ```
 
-Run application, PostgreSQL and Jaeger:
+Run application and PostgreSQL:
 
 ```shell
 docker-compose up
