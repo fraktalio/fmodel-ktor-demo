@@ -1,6 +1,95 @@
-## Running
+# fmodel-ktor-demo (EventSourcing)
 
-### Jaeger
+A demo/example project for the imaginary restaurant and order management.
+
+![event model image](.assets/restaurant-model.jpg)
+
+## Fmodel
+
+This project is using [Fmodel](https://github.com/fraktalio/fmodel) - Kotlin, multiplatform library.
+
+**Fmodel** is:
+
+- enabling functional, algebraic and reactive domain modeling with Kotlin programming language.
+- inspired by DDD, EventSourcing and Functional programming communities, yet implements these ideas and
+  concepts in idiomatic Kotlin, which in turn makes our code
+    - less error-prone,
+    - easier to understand,
+    - easier to test,
+    - type-safe and
+    - thread-safe.
+- enabling illustrating requirements using examples
+    - the requirements are presented as scenarios.
+    - a scenario is an example of the system’s behavior from the users’ perspective,
+    - and they are specified using the Given-When-Then structure to create a testable/runnable specification
+        - Given `< some precondition(s) / events >`
+        - When `< an action/trigger occurs / commands>`
+        - Then `< some post condition / events >`
+
+Check the tests!
+
+```kotlin
+with(orderDecider) {
+    givenEvents(listOf(orderCreatedEvent)) {         // PRE CONDITIONS
+        whenCommand(createOrderCommand)              // ACTION
+    } thenEvents listOf(orderRejectedEvent)          // POST CONDITIONS
+}
+```
+
+## Fstore-SQL
+
+This project is using [PostgreSQL powered event store](https://github.com/fraktalio/fstore-sql), optimized for event
+sourcing and event streaming.
+
+**Fstore-SQL** is enabling event-sourcing and *pool-based* event-streaming patterns by using SQL (PostgreSQL) only.
+
+- `event-sourcing` data pattern (by using PostgreSQL database) to durably store events
+    - Append events to the ordered, append-only log, using `entity id`/`decider id` as a key
+    - Load all the events for a single entity/decider, in an ordered sequence, using the `entity id`/`decider id` as a
+      key
+    - Support optimistic locking/concurrency
+- `event-streaming` to concurrently coordinate read over a streams of events from multiple consumer instances
+    - Support real-time concurrent consumers to project events into view/query models
+
+## Patterns
+
+- EventSourcing
+- CQRS
+
+## Prerequisites
+
+- [Java 17](https://adoptium.net/)
+- [Docker](https://www.docker.com/products/docker-desktop/)
+
+## Technology
+
+- [Fmodel - Domain modeling with Kotlin](https://github.com/fraktalio/fmodel)
+- [Ktor](https://ktor.io/) (HTTP)
+- [Kotlin](https://kotlinlang.org/) (Coroutines, Serialization)
+- [Arrow](https://arrow-kt.io/) (Fx Coroutines, ...)
+- [Testcontainers](https://www.testcontainers.org/)
+- [PostgreSQL](https://www.postgresql.org/) ([event store](https://github.com/fraktalio/fstore-sql), projections)
+- [Jaeger](https://www.jaegertracing.io/) (Distributed Tracing)
+
+## Run & Test
+
+This project is using [Gradle](https://docs.gradle.org) as a build and automation tool.
+
+### Test:
+
+```shell
+./gradlew check
+```
+
+### Run:
+
+> Make sure you have PostgreSQL installed and running.
+
+```shell
+docker run --name postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres
+```
+
+> Make sure you have [Jaeger](https://www.jaegertracing.io/) installed and running.
 
 ```shell
 docker run -d --name jaeger \
@@ -19,41 +108,41 @@ docker run -d --name jaeger \
 jaegertracing/all-in-one:1.38
 ```
 
-Note, this run command was taken from
-the [Jaeger Docs](https://www.jaegertracing.io/docs/1.6/getting-started/#all-in-one-docker-image)
-and probably opens unnecessary ports for this example.
+Once running, you can view the Jaeger UI at http://localhost:16686/
 
-Once running, you can view the UI at http://localhost:16686/.
-
-### Postgres
+> Check the connection URL in [application enviroment variables](src/main/kotlin/com/fraktalio/Env.kt)
 
 ```shell
-docker run --name postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres
+./gradlew run
 ```
 
-### Application
+### Run in Docker
+
+> Make sure you have [Docker](https://www.docker.com/products/docker-desktop/) installed and running.
+
+Build OCI (docker) image:
 
 ```shell
-gradle run
+./gradlew publishImageToLocalRegistry
 ```
 
-Build fat jar:
+Run application, PostgreSQL and Jaeger:
 
 ```shell
-./gradlew buildFatJar
+docker-compose up
 ```
 
-Run the jar from terminal:
+## Further Reading
 
-```shell
-java -Dio.ktor.development=true -javaagent:./opentelemetry-javaagent.jar -Dotel.service.name=fmodel-ktor-demo -Dotel.traces.exporter=jaeger -Dotel.exporter.jaeger.endpoint=http://localhost:14250 -Dotel.metrics.exporter=none -Dotel.instrumentation.experimental.span-suppression-strategy=none -jar build/libs/fmodel-ktor-demo-all.jar
-```
-
-### Resources
-
-#### Tracing (Open Telemetry)
-
+- Check the [source code](https://github.com/fraktalio/fmodel)
+- Read the [blog](https://fraktalio.com/blog/)
+- Learn by example on the [playground](https://fraktalio.com/blog/playground)
 - [https://github.com/open-telemetry/opentelemetry-java-instrumentation/tree/main/instrumentation/ktor/ktor-2.0/library](https://github.com/open-telemetry/opentelemetry-java-instrumentation/tree/main/instrumentation/ktor/ktor-2.0/library)
 - [https://github.com/open-telemetry/opentelemetry-java-instrumentation/issues/7755](https://github.com/open-telemetry/opentelemetry-java-instrumentation/issues/7755)
 - [https://github.com/mpeyper/open-telemetry-coroutine-tracing-repro/tree/main/src/main/kotlin/example](https://github.com/mpeyper/open-telemetry-coroutine-tracing-repro/tree/main/src/main/kotlin/example)
 
+---
+Created with :heart: by [Fraktalio](https://fraktalio.com/)
+
+Excited to launch your next IT project with us? Let's get started! Reach out to our team at `info@fraktalio.com` to
+begin the journey to success.

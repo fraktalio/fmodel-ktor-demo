@@ -21,6 +21,15 @@ plugins {
 group = "com.fraktalio"
 version = "0.0.1"
 application {
+    kotlin {
+        jvmToolchain(17)
+    }
+    ktor {
+        docker {
+            localImageName.set("fmodel-ktor-demo")
+            imageTag.set("0.0.1")
+        }
+    }
     mainClass.set("com.fraktalio.ApplicationKt")
 
     applicationDefaultJvmArgs = listOf(
