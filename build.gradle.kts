@@ -18,10 +18,15 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization") version "1.8.20"
 }
 
+
 group = "com.fraktalio"
 version = "0.0.1"
 application {
+
     kotlin {
+        tasks.test {
+            useJUnitPlatform()
+        }
         jvmToolchain(17)
     }
     ktor {
@@ -72,7 +77,5 @@ dependencies {
     implementation("io.opentelemetry:opentelemetry-extension-kotlin")
     implementation("io.opentelemetry.instrumentation:opentelemetry-ktor-2.0:1.25.0-alpha")
     implementation("io.ktor:ktor-server-openapi:$ktor_version")
-    testImplementation("io.ktor:ktor-server-tests-jvm:$ktor_version")
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
-    testImplementation("io.ktor:ktor-server-test-host-jvm:$ktor_version")
+    testImplementation(kotlin("test"))
 }
