@@ -1,4 +1,4 @@
-package com.fraktalio.routes
+package com.fraktalio.adapter.routes
 
 import com.fraktalio.LOGGER
 import com.fraktalio.adapter.persistence.OrderRepository

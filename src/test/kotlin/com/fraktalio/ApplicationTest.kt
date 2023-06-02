@@ -1,6 +1,6 @@
 package com.fraktalio
 
-import com.fraktalio.routes.homeRouting
+import com.fraktalio.adapter.routes.homeRouting
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*

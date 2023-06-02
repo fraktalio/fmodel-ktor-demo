@@ -1,4 +1,4 @@
-package com.fraktalio.adapter.extension
+package com.fraktalio.adapter
 
 import com.fraktalio.domain.*
 

@@ -1,10 +1,11 @@
-package com.fraktalio.adapter.persistence
+package com.fraktalio.adapter.persistence.eventstream
 
 import com.fraktalio.LOGGER
-import com.fraktalio.adapter.extension.alterSQLResource
-import com.fraktalio.adapter.extension.connection
-import com.fraktalio.adapter.extension.deciderId
-import com.fraktalio.adapter.extension.executeSql
+import com.fraktalio.adapter.deciderId
+import com.fraktalio.adapter.persistence.eventstore.eventMapper
+import com.fraktalio.adapter.persistence.extension.alterSQLResource
+import com.fraktalio.adapter.persistence.extension.connection
+import com.fraktalio.adapter.persistence.extension.executeSql
 import com.fraktalio.application.MaterializedViewState
 import com.fraktalio.domain.Event
 import com.fraktalio.fmodel.application.MaterializedView
@@ -27,6 +28,9 @@ import kotlin.coroutines.cancellation.CancellationException
 // ######################
 // ######## VIEW ########
 // ######################
+/**
+ * A view entity - The views table is a registry of all views/subscribers that are able to subscribe to all events with a "pooling_delay" frequency.
+ */
 internal data class ViewEntity(
     val view: String,
     val poolingDelayMilliseconds: Long = 500L,
@@ -35,6 +39,9 @@ internal data class ViewEntity(
     val updatedAt: OffsetDateTime? = null
 )
 
+/**
+ * A view mapper - Maps a row from the database to a view entity.
+ */
 internal val viewMapper: (Row, RowMetadata) -> ViewEntity = { row, _ ->
     ViewEntity(
         row.get("view", String::class.java) ?: error("view is null"),
@@ -45,15 +52,24 @@ internal val viewMapper: (Row, RowMetadata) -> ViewEntity = { row, _ ->
     )
 }
 
+/**
+ * An user facing representation of the ViewEntity - DTO
+ */
 @Serializable
 data class View(val view: String, val poolingDelayMilliseconds: Long)
 
+/**
+ * Maps a view entity to a view.
+ */
 internal fun ViewEntity.asView() = View(view, poolingDelayMilliseconds)
 
 // ######################
 // ######## LOCK ########
 // ######################
 
+/**
+ * A lock entity - The locks table is a registry of all locks that are used to prevent multiple concurrent views/subscribers to process the same event.
+ */
 internal data class LockEntity(
     val view: String,
     val deciderId: String,
@@ -65,6 +81,9 @@ internal data class LockEntity(
     val updatedAt: OffsetDateTime? = null,
 )
 
+/**
+ * A lock mapper - Maps a row from the database to a lock entity.
+ */
 internal val lockMapper: (Row, RowMetadata) -> LockEntity = { row, _ ->
     LockEntity(
         row.get("view", String::class.java) ?: error("view is null"),
@@ -78,7 +97,12 @@ internal val lockMapper: (Row, RowMetadata) -> LockEntity = { row, _ ->
     )
 }
 
-
+/**
+ * Actions that can be performed on a lock.
+ * ACK - Acknowledge the event (with `offset`) processing as successful.
+ * NACK - Negative acknowledge of the event processing. - The event will be processed again, immediately.
+ * SCHEDULE_NACK - Negative acknowledge of the event processing. - The event will be processed again, after `milliseconds`.
+ */
 @Serializable
 sealed class Action
 
@@ -91,6 +115,9 @@ data class Nack(val deciderId: String) : Action()
 @Serializable
 data class ScheduleNack(val milliseconds: Long, val deciderId: String) : Action()
 
+/**
+ * An user facing representation of the LockEntity - DTO
+ */
 @Serializable
 data class Lock(
     val view: String,
@@ -103,6 +130,9 @@ data class Lock(
     val updatedAt: String?,
 )
 
+/**
+ * Maps a lock entity to a lock DTO.
+ */
 internal fun LockEntity.asLock() = Lock(
     view,
     deciderId,
@@ -114,6 +144,11 @@ internal fun LockEntity.asLock() = Lock(
     updatedAt?.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
 )
 
+/**
+ * Event Stream enables registration of views/subscribers and event streaming/pooling from the database.
+ *
+ *  @author Иван Дугалић / Ivan Dugalic / @idugalic
+ */
 internal class EventStream(private val connectionFactory: ConnectionFactory) {
     companion object {
         private const val CREATE_TABLE_VIEWS =
@@ -383,6 +418,11 @@ internal class EventStream(private val connectionFactory: ConnectionFactory) {
     @OptIn(ExperimentalCoroutinesApi::class)
     private val dbDispatcher = Dispatchers.IO.limitedParallelism(10)
 
+    /**
+     * Initialize the DB schema
+     *
+     * Uses [Dispatchers.IO] dispatcher with a limited parallelism
+     */
     suspend fun initSchema() = withContext(dbDispatcher) {
         LOGGER.debug("# Initializing View schema #")
         connectionFactory.connection().alterSQLResource(CREATE_TABLE_VIEWS)
@@ -405,29 +445,44 @@ internal class EventStream(private val connectionFactory: ConnectionFactory) {
     // ######################
     // ######## VIEW ########
     // ######################
+    /**
+     * Register a view
+     * @param view the view name
+     * @param poolingDelayMilliseconds the pooling delay in milliseconds
+     * @param startAt the start date
+     *
+     * Uses [Dispatchers.IO] dispatcher with a limited parallelism
+     */
     suspend fun registerView(
         view: String,
         poolingDelayMilliseconds: Long,
         startAt: LocalDateTime
-    ): View = connectionFactory.connection()
-        .executeSql(
-            """
+    ): View = withContext(dbDispatcher) {
+        connectionFactory.connection()
+            .executeSql(
+                """
               INSERT INTO "views"
               ("view", "pooling_delay", "start_at") VALUES ($1, $2, $3)
               ON CONFLICT ON CONSTRAINT "views_pkey"
               DO UPDATE SET "updated_at" = NOW(), "start_at" = EXCLUDED."start_at", "pooling_delay" = EXCLUDED."pooling_delay"
               RETURNING *
             """,
-            viewMapper
-        ) {
-            bind(0, view)
-            bind(1, poolingDelayMilliseconds)
-            bind(2, startAt)
-        }
-        .single()
-        .asView()
+                viewMapper
+            ) {
+                bind(0, view)
+                bind(1, poolingDelayMilliseconds)
+                bind(2, startAt)
+            }
+            .single()
+            .asView()
+    }
 
 
+    /**
+     * Find all views
+     *
+     * Uses [Dispatchers.IO] dispatcher with a limited parallelism
+     */
     fun findAllViews() = flow {
         connectionFactory
             .connection()
@@ -437,9 +492,15 @@ internal class EventStream(private val connectionFactory: ConnectionFactory) {
             )
             .map { it.asView() }
             .also { emitAll(it) }
-    }
+    }.flowOn(dbDispatcher)
 
-    suspend fun findViewById(view: String): View? =
+    /**
+     * Find a view by its name
+     * @param view the view name
+     *
+     * Uses [Dispatchers.IO] dispatcher with a limited parallelism
+     */
+    suspend fun findViewById(view: String): View? = withContext(dbDispatcher) {
         connectionFactory
             .connection()
             .executeSql(
@@ -450,10 +511,16 @@ internal class EventStream(private val connectionFactory: ConnectionFactory) {
             }
             .singleOrNull()
             ?.asView()
+    }
 
     // ######################
     // ######## LOCK ########
     // ######################
+    /**
+     * Find all locks
+     *
+     * Uses [Dispatchers.IO] dispatcher with a limited parallelism
+     */
     fun findAllLocks() = flow {
         connectionFactory
             .connection()
@@ -463,10 +530,10 @@ internal class EventStream(private val connectionFactory: ConnectionFactory) {
             )
             .map { it.asLock() }
             .also { emitAll(it) }
-    }
+    }.flowOn(dbDispatcher)
 
 
-    private suspend fun executeLockAction(view: String, action: Action): Lock? =
+    private suspend fun executeLockAction(view: String, action: Action): Lock? = withContext(dbDispatcher) {
         when (action) {
             is Ack ->
                 connectionFactory
@@ -509,11 +576,12 @@ internal class EventStream(private val connectionFactory: ConnectionFactory) {
                     .singleOrNull()
                     ?.asLock()
         }
+    }
 
     // #################################
     // ######## EVENT STREAMING  #######
     // #################################
-    private suspend fun getEvent(view: String): Pair<Event, Long>? =
+    private suspend fun getEvent(view: String): Pair<Event, Long>? = withContext(dbDispatcher) {
         connectionFactory
             .connection()
             .executeSql(
@@ -522,15 +590,23 @@ internal class EventStream(private val connectionFactory: ConnectionFactory) {
             ) {
                 bind(0, view)
             }.singleOrNull()?.let { Pair(Json.decodeFromString(it.data.decodeToString()), it.offset ?: -1) }
+    }
 
     private fun poolEvents(view: String, poolingDelayMilliseconds: Long): Flow<Pair<Event, Long>> =
-        channelFlow {
+        channelFlow<Pair<Event, Long>> {
             while (isActive) {
                 getEvent(view)?.let { send(it) }
                 delay(poolingDelayMilliseconds)
             }
-        }
+        }.flowOn(dbDispatcher)
 
+    /**
+     * Stream events for a view
+     * @param view the view name
+     * @param actions the actions to send to the view
+     *
+     * Uses [Dispatchers.IO] dispatcher with a limited parallelism
+     */
     fun streamEvents(
         view: String,
         actions: Flow<Action>
@@ -545,33 +621,42 @@ internal class EventStream(private val connectionFactory: ConnectionFactory) {
                 poolEvents(view, viewEntity.poolingDelayMilliseconds)
                     .collect { send(it) }
             }
-        }
+        }.flowOn(dbDispatcher)
 
+    /**
+     * Register a materialized view and start pooling events
+     * @param view the view name
+     * @param materializedView the materialized view to register - event handler
+     *
+     * Uses [Dispatchers.IO] dispatcher with a limited parallelism
+     */
     suspend fun registerMaterializedViewAndStartPooling(
         view: String,
         materializedView: MaterializedView<MaterializedViewState, Event?>
     ) {
-        coroutineScope {
-            val actions = Channel<Action>()
-            streamEvents(view, actions.receiveAsFlow())
-                .onStart {
-                    launch {
-                        actions.send(Ack(-1, "start"))
+        withContext(dbDispatcher) {
+            coroutineScope {
+                val actions = Channel<Action>()
+                streamEvents(view, actions.receiveAsFlow())
+                    .onStart {
+                        launch {
+                            actions.send(Ack(-1, "start"))
+                        }
                     }
-                }
-                .onEach {
-                    try {
-                        materializedView.handle(it.first)
-                        actions.send(Ack(it.second, it.first.deciderId()))
-                    } catch (e: Exception) {
-                        LOGGER.error("Error while handling event, retrying in 10 seconds ${it.first}", e)
-                        actions.send(ScheduleNack(10000, it.first.deciderId()))
+                    .onEach {
+                        try {
+                            materializedView.handle(it.first)
+                            actions.send(Ack(it.second, it.first.deciderId()))
+                        } catch (e: Exception) {
+                            LOGGER.error("Error while handling event, retrying in 10 seconds ${it.first}", e)
+                            actions.send(ScheduleNack(10000, it.first.deciderId()))
+                        }
                     }
-                }
-                .retry(5) { cause ->
-                    cause !is CancellationException
-                }
-                .collect()
+                    .retry(5) { cause ->
+                        cause !is CancellationException
+                    }
+                    .collect()
+            }
         }
     }
 }

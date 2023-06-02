@@ -1,10 +1,10 @@
-package com.fraktalio.adapter.persistence
+package com.fraktalio.adapter.persistence.eventstore
 
 import com.fraktalio.LOGGER
-import com.fraktalio.adapter.extension.alterSQLResource
-import com.fraktalio.adapter.extension.bindNullable
-import com.fraktalio.adapter.extension.connection
-import com.fraktalio.adapter.extension.executeSql
+import com.fraktalio.adapter.persistence.extension.alterSQLResource
+import com.fraktalio.adapter.persistence.extension.bindNullable
+import com.fraktalio.adapter.persistence.extension.connection
+import com.fraktalio.adapter.persistence.extension.executeSql
 import io.r2dbc.postgresql.codec.Json
 import io.r2dbc.spi.ConnectionFactory
 import io.r2dbc.spi.Row
@@ -17,7 +17,7 @@ import java.time.OffsetDateTime
 import java.util.*
 
 /**
- * An Event entity.
+ * An Event entity / representation of the events table in the database.
  */
 internal data class EventEntity(
     val decider: String,
@@ -52,6 +52,9 @@ internal val eventMapper: (Row, RowMetadata) -> EventEntity = { row, _ ->
 
 /**
  * Event store implementation / Postgres implementation.
+ * @param connectionFactory Postgres connection factory
+ *
+ * @author Иван Дугалић / Ivan Dugalic / @idugalic
  */
 internal class EventStore(private val connectionFactory: ConnectionFactory) {
     companion object {

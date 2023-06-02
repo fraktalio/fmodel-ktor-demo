@@ -2,14 +2,14 @@ package com.fraktalio.adapter.persistence
 
 
 import com.fraktalio.LOGGER
-import com.fraktalio.adapter.extension.decider
-import com.fraktalio.adapter.extension.deciderId
-import com.fraktalio.adapter.extension.event
+import com.fraktalio.adapter.decider
+import com.fraktalio.adapter.deciderId
+import com.fraktalio.adapter.event
+import com.fraktalio.adapter.persistence.eventstore.EventEntity
+import com.fraktalio.adapter.persistence.eventstore.EventStore
 import com.fraktalio.application.AggregateEventRepository
 import com.fraktalio.domain.Command
 import com.fraktalio.domain.Event
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.decodeFromString
@@ -26,9 +26,6 @@ import java.util.*
 internal class AggregateEventRepositoryImpl(
     private val eventStore: EventStore
 ) : AggregateEventRepository {
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private val dbDispatcher = Dispatchers.IO.limitedParallelism(10)
 
     private fun Flow<EventEntity>.appendAll(): Flow<EventEntity> = map { eventStore.append(it) }
 
@@ -49,14 +46,13 @@ internal class AggregateEventRepositoryImpl(
                     else -> LOGGER.warn("fetchEvents(${this@fetchEvents}) completed with exception $it")
                 }
             }
-            .flowOn(dbDispatcher)
 
     /**
      * The latest version provider
      */
     override val latestVersionProvider: (Event?) -> UUID? = { event ->
         when (event) {
-            is Event -> runBlocking(dbDispatcher) { eventStore.getLastEvent(event.deciderId())?.eventId }
+            is Event -> runBlocking { eventStore.getLastEvent(event.deciderId())?.eventId }
             null -> null
         }
     }
@@ -89,7 +85,6 @@ internal class AggregateEventRepositoryImpl(
                 else -> LOGGER.warn("saving new events completed with exception $it")
             }
         }
-        .flowOn(dbDispatcher)
 
     /**
      * Storing the new state as a series/flow of Events
@@ -118,7 +113,6 @@ internal class AggregateEventRepositoryImpl(
                 else -> LOGGER.warn("saving new events completed with exception $it")
             }
         }
-        .flowOn(dbDispatcher)
 }
 
 internal fun EventEntity.toEventWithId() = Pair<Event, UUID>(Json.decodeFromString(data.decodeToString()), eventId)

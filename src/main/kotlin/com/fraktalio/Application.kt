@@ -3,8 +3,14 @@ package com.fraktalio
 import arrow.continuations.SuspendApp
 import arrow.continuations.ktor.server
 import arrow.fx.coroutines.resourceScope
-import com.fraktalio.adapter.extension.pooledConnectionFactory
-import com.fraktalio.adapter.persistence.*
+import com.fraktalio.adapter.persistence.AggregateEventRepositoryImpl
+import com.fraktalio.adapter.persistence.MaterializedViewStateRepositoryImpl
+import com.fraktalio.adapter.persistence.OrderRepository
+import com.fraktalio.adapter.persistence.RestaurantRepository
+import com.fraktalio.adapter.persistence.eventstore.EventStore
+import com.fraktalio.adapter.persistence.eventstream.EventStream
+import com.fraktalio.adapter.persistence.extension.pooledConnectionFactory
+import com.fraktalio.adapter.routes.restaurantRouting
 import com.fraktalio.application.Aggregate
 import com.fraktalio.application.aggregate
 import com.fraktalio.application.materializedView
@@ -13,8 +19,6 @@ import com.fraktalio.plugins.configureMonitoring
 import com.fraktalio.plugins.configureSerialization
 import com.fraktalio.plugins.configureTracing
 import com.fraktalio.plugins.meterRegistry
-import com.fraktalio.routes.homeRouting
-import com.fraktalio.routes.restaurantRouting
 import io.ktor.server.application.*
 import io.ktor.server.cio.*
 import io.ktor.util.logging.*
@@ -76,6 +80,5 @@ fun Application.module(
     restaurantRepository: RestaurantRepository,
     orderRepository: OrderRepository
 ) {
-    homeRouting()
     restaurantRouting(aggregate, restaurantRepository, orderRepository)
 }

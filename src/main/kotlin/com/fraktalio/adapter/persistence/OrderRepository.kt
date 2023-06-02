@@ -1,9 +1,9 @@
 package com.fraktalio.adapter.persistence
 
 import com.fraktalio.LOGGER
-import com.fraktalio.adapter.extension.alterSQLResource
-import com.fraktalio.adapter.extension.connection
-import com.fraktalio.adapter.extension.executeSql
+import com.fraktalio.adapter.persistence.extension.alterSQLResource
+import com.fraktalio.adapter.persistence.extension.connection
+import com.fraktalio.adapter.persistence.extension.executeSql
 import com.fraktalio.domain.OrderViewState
 import io.r2dbc.spi.ConnectionFactory
 import io.r2dbc.spi.Row
@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.singleOrNull
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
@@ -57,7 +58,7 @@ class OrderRepository(private val connectionFactory: ConnectionFactory) {
 
     }
 
-    suspend fun upsertOrder(order: OrderViewState?) =
+    suspend fun upsertOrder(order: OrderViewState?) = withContext(dbDispatcher) {
         if (order != null)
             connectionFactory.connection()
                 .executeSql(
@@ -76,17 +77,20 @@ class OrderRepository(private val connectionFactory: ConnectionFactory) {
                 }
                 .singleOrNull()
         else null
+    }
 
-    suspend fun findById(id: String) = connectionFactory.connection()
-        .executeSql(
-            """
+    suspend fun findById(id: String) = withContext(dbDispatcher) {
+        connectionFactory.connection()
+            .executeSql(
+                """
                 SELECT * FROM orders WHERE order_id = $1
                 """,
-            orderMapper
-        ) {
-            bind(0, id)
-        }
-        .singleOrNull()
+                orderMapper
+            ) {
+                bind(0, id)
+            }
+            .singleOrNull()
+    }
 
     fun findAll() = flow {
         connectionFactory.connection()
@@ -97,7 +101,7 @@ class OrderRepository(private val connectionFactory: ConnectionFactory) {
                 orderMapper
             )
             .also { emitAll(it) }
-    }
+    }.flowOn(dbDispatcher)
 }
 
 private val orderMapper: (Row, RowMetadata) -> OrderViewState = { row, _ ->
