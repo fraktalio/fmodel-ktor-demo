@@ -7,7 +7,6 @@ import com.fraktalio.application.Aggregate
 import com.fraktalio.domain.Command
 import com.fraktalio.domain.Event
 import com.fraktalio.fmodel.application.handleOptimistically
-import com.fraktalio.plugins.withSpan
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -28,32 +27,32 @@ fun Application.restaurantRouting(
     routing {
         post("/commands") {
             try {
-                val command = withSpan("request") { call.receive<Command>() }
-                val resultEvents: List<Event> = withSpan("aggregate-handle") {
+                val command = call.receive<Command>()
+                val resultEvents: List<Event> =
                     aggregate.handleOptimistically(command).map { it.first }.filterNotNull().toList()
-                }
-                withSpan("response") { call.respond(HttpStatusCode.Created, resultEvents) }
+
+                call.respond(HttpStatusCode.Created, resultEvents)
             } catch (e: Exception) {
                 LOGGER.error("Error: ${e.message}", e)
-                withSpan("response-exception") { call.respond(HttpStatusCode.BadRequest) }
+                call.respond(HttpStatusCode.BadRequest)
             }
         }
         get("/restaurants") {
             try {
-                val restaurants = withSpan("restaurant-findAll") { restaurantRepository.findAll().toList() }
-                withSpan("restaurant-findAll-response") { call.respond(restaurants) }
+                val restaurants = restaurantRepository.findAll().toList()
+                call.respond(restaurants)
             } catch (e: Exception) {
                 LOGGER.error("Error: ${e.message}", e)
-                withSpan("restaurant-findAll-exception") { call.respond(HttpStatusCode.BadRequest) }
+                call.respond(HttpStatusCode.BadRequest)
             }
         }
         get("/orders") {
             try {
-                val orders = withSpan("order-findAll") { orderRepository.findAll().toList() }
-                withSpan("order-findAll-response") { call.respond(orders) }
+                val orders = orderRepository.findAll().toList()
+                call.respond(orders)
             } catch (e: Exception) {
                 LOGGER.error("Error: ${e.message}", e)
-                withSpan("order-findAll-exception") { call.respond(HttpStatusCode.BadRequest) }
+                call.respond(HttpStatusCode.BadRequest)
             }
         }
     }

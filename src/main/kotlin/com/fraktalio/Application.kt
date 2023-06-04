@@ -15,10 +15,7 @@ import com.fraktalio.application.Aggregate
 import com.fraktalio.application.aggregate
 import com.fraktalio.application.materializedView
 import com.fraktalio.domain.*
-import com.fraktalio.plugins.configureMonitoring
 import com.fraktalio.plugins.configureSerialization
-import com.fraktalio.plugins.configureTracing
-import com.fraktalio.plugins.meterRegistry
 import io.ktor.server.application.*
 import io.ktor.server.cio.*
 import io.ktor.util.logging.*
@@ -38,7 +35,6 @@ internal val LOGGER = KtorSimpleLogger("com.fraktalio")
 fun main(): Unit = SuspendApp {
     resourceScope {
         val httpEnv = Env.Http()
-        val meterRegistry = meterRegistry()
         val connectionFactory: ConnectionFactory = pooledConnectionFactory(Env.R2DBCDataSource())
         // ### Command Side - Event Sourcing ###
         val eventStore = EventStore(connectionFactory).apply { initSchema() }
@@ -66,8 +62,6 @@ fun main(): Unit = SuspendApp {
 
         server(CIO, host = httpEnv.host, port = httpEnv.port) {
             configureSerialization()
-            configureMonitoring(meterRegistry)
-            configureTracing()
 
             module(aggregate, restaurantRepository, orderRepository)
         }
