@@ -81,7 +81,7 @@ This project is using [Gradle](https://docs.gradle.org) as a build and automatio
 
 ### Run:
 
-> Make sure you have [PostgresL](https://www.postgresql.org/download/) installed and running.
+> Make sure you have [Postgres](https://www.postgresql.org/download/) installed and running.
 
 > Alternatively, you can use [Docker](https://www.docker.com/products/docker-desktop/) to run PostgreSQL.
 
