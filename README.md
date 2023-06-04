@@ -1,8 +1,12 @@
 # fmodel-ktor-demo (EventSourcing)
 
 A demo/example project for the imaginary restaurant and order management.
+It is backing the [Fmodel Reference Guide](https://fraktalio.com/fmodel/).
+
+It demonstrates how to run our unique domain and orchestrate it in an EventSourced/EventDriven way.
 
 ![event model image](.assets/restaurant-model.jpg)
+*this bleuprint is an outcome of the [event-modeling](https://eventmodeling.org/posts/what-is-event-modeling/) process*
 
 ## Fmodel
 
@@ -116,6 +120,7 @@ docker-compose up
 - Check the [FModel reference guide](https://github.com/fraktalio/fmodel)
 - Read the [blog](https://fraktalio.com/blog/)
 - Learn by example on the [playground](https://fraktalio.com/blog/playground)
+- [Spring Boot version of this project](https://github.com/fraktalio/fmodel-spring-demo).
 
 ---
 Created with :heart: by [Fraktalio](https://fraktalio.com/)
