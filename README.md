@@ -55,6 +55,11 @@ sourcing and event streaming.
 - `event-streaming` to concurrently coordinate read over a streams of events from multiple consumer instances
     - Support real-time concurrent consumers to project events into view/query models
 
+## Tools
+
+- [EventModeling](https://eventmodeling.org/posts/what-is-event-modeling/) - a method of describing systems using an
+  example of how information has changed within them over time.
+
 ## Patterns
 
 - EventSourcing
