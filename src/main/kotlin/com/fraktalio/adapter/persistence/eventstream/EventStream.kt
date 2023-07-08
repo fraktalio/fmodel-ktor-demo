@@ -17,7 +17,6 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import java.time.LocalDateTime
 import java.time.Month
@@ -627,36 +626,36 @@ internal class EventStream(private val connectionFactory: ConnectionFactory) {
      * Register a materialized view and start pooling events
      * @param view the view name
      * @param materializedView the materialized view to register - event handler
+     * @param scope the coroutine scope
      *
      * Uses [Dispatchers.IO] dispatcher with a limited parallelism
      */
-    suspend fun registerMaterializedViewAndStartPooling(
+    fun registerMaterializedViewAndStartPooling(
         view: String,
-        materializedView: MaterializedView<MaterializedViewState, Event?>
+        materializedView: MaterializedView<MaterializedViewState, Event?>,
+        scope: CoroutineScope
     ) {
-        withContext(dbDispatcher) {
-            coroutineScope {
-                val actions = Channel<Action>()
-                streamEvents(view, actions.receiveAsFlow())
-                    .onStart {
-                        launch {
-                            actions.send(Ack(-1, "start"))
-                        }
+        scope.launch(dbDispatcher) {
+            val actions = Channel<Action>()
+            streamEvents(view, actions.receiveAsFlow())
+                .onStart {
+                    launch {
+                        actions.send(Ack(-1, "start"))
                     }
-                    .onEach {
-                        try {
-                            materializedView.handle(it.first)
-                            actions.send(Ack(it.second, it.first.deciderId()))
-                        } catch (e: Exception) {
-                            LOGGER.error("Error while handling event, retrying in 10 seconds ${it.first}", e)
-                            actions.send(ScheduleNack(10000, it.first.deciderId()))
-                        }
+                }
+                .onEach {
+                    try {
+                        materializedView.handle(it.first)
+                        actions.send(Ack(it.second, it.first.deciderId()))
+                    } catch (e: Exception) {
+                        LOGGER.error("Error while handling event, retrying in 10 seconds ${it.first}", e)
+                        actions.send(ScheduleNack(10000, it.first.deciderId()))
                     }
-                    .retry(5) { cause ->
-                        cause !is CancellationException
-                    }
-                    .collect()
-            }
+                }
+                .retry(5) { cause ->
+                    cause !is CancellationException
+                }
+                .collect()
         }
     }
 }

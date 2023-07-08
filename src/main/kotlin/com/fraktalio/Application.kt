@@ -21,7 +21,6 @@ import io.ktor.server.cio.*
 import io.ktor.util.logging.*
 import io.r2dbc.spi.ConnectionFactory
 import kotlinx.coroutines.awaitCancellation
-import kotlinx.coroutines.launch
 
 /**
  * Simple logger
@@ -58,7 +57,7 @@ fun main(): Unit = SuspendApp {
             restaurantView(),
             orderView(),
             materializedViewStateRepository
-        ).also { launch { eventStream.registerMaterializedViewAndStartPooling("view", it) } }
+        ).also { eventStream.registerMaterializedViewAndStartPooling("view", it, this@SuspendApp) }
 
         server(CIO, host = httpEnv.host, port = httpEnv.port) {
             configureSerialization()
