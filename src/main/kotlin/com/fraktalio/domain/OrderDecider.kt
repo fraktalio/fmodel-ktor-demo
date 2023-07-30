@@ -38,6 +38,17 @@ fun orderDecider() = OrderDecider(
                 )
                 else flowOf(OrderPreparedEvent(c.identifier))
 
+            is MarkOrderAsPayedCommand ->
+                if (s == null) flowOf(OrderNotPayedEvent(c.identifier, Reason("Order does not exist")))
+                else if (OrderStatus.PREPARED != s.status) flowOf(
+                    OrderNotPreparedEvent(
+                        c.identifier,
+                        Reason("Order not in PREPARED status"),
+                    )
+                )
+                else flowOf(OrderPayedEvent(c.identifier))
+
+
             null -> emptyFlow() // We ignore the `null` command by emitting the empty flow. Only the Decider that can handle `null` command can be combined (Monoid) with other Deciders.
         }
     },
@@ -45,6 +56,7 @@ fun orderDecider() = OrderDecider(
         when (e) {
             is OrderCreatedEvent -> Order(e.identifier, e.restaurantId, e.status, e.lineItems)
             is OrderPreparedEvent -> s?.copy(status = e.status)
+            is OrderPayedEvent -> s?.copy(status = e.status)
             is OrderRejectedEvent -> s?.copy(status = e.status)
             is OrderErrorEvent -> s // Error events are not changing the state in our/this case.
             null -> s // Null events are not changing the state / We return current state instead. Only the Decider that can handle `null` event can be combined (Monoid) with other Deciders.

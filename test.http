@@ -48,6 +48,15 @@ Content-Type: application/json
   ]
 }
 
+### Send POST Command - Mark order as Prepared
+POST http://localhost:8080/commands
+Content-Type: application/json
+
+{
+  "type": "com.fraktalio.domain.MarkOrderAsPreparedCommand",
+  "identifier": "10fca0c4-3376-4ca2-a7c2-db2b75c250a5"
+}
+
 ### GET all restaurants
 GET http://localhost:8080/restaurants
 

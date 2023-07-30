@@ -5,6 +5,7 @@ import com.fraktalio.domain.*
 fun Command.deciderId() = when (this) {
     is RestaurantCommand -> identifier.value.toString()
     is OrderCommand -> identifier.value.toString()
+    is PaymentCommand -> identifier.value.toString()
 }
 
 fun Event.deciderId() = when (this) {

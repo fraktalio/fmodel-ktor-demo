@@ -2,11 +2,12 @@ package com.fraktalio.domain
 
 import com.fraktalio.fmodel.domain.Saga
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flowOf
 
 /**
- * A convenient type alias for Saga<OrderEvent?, RestaurantCommand>
+ * A convenient type alias for Saga<Event?, Command>
  */
-typealias RestaurantSaga = Saga<OrderEvent?, RestaurantCommand>
+typealias PaymentSaga = Saga<Event?, Command>
 
 /**
  * Saga is a datatype that represents the central point of control deciding what to execute next.
@@ -14,16 +15,16 @@ typealias RestaurantSaga = Saga<OrderEvent?, RestaurantCommand>
  *
  * Saga does not maintain the state.
  *
- * `react` is a pure function/lambda that takes any event/action-result of type [OrderEvent] as parameter, and returns the flow of commands/actions Flow<[RestaurantCommand]> to be published further downstream.
+ * `react` is a pure function/lambda that takes any event/action-result of type [OrderEvent] as parameter, and returns the flow of commands/actions Flow<[PaymentCommand]> to be published further downstream.
  */
-fun restaurantSaga() = RestaurantSaga(
+fun paymentSaga() = PaymentSaga(
     react = { e ->
         when (e) {
-            //TODO evolve the example ;), it does not do much at the moment.
+            is OrderPreparedEvent -> flowOf(PayCommand(orderId = e.identifier))
             is OrderCreatedEvent -> emptyFlow()
-            is OrderPreparedEvent -> emptyFlow()
-            is OrderPayedEvent -> emptyFlow()
             is OrderErrorEvent -> emptyFlow()
+            is OrderPayedEvent -> emptyFlow()
+            is RestaurantEvent -> emptyFlow()
             null -> emptyFlow() // We ignore the `null` event by returning the empty flow of commands. Only the Saga that can handle `null` event/action-result can be combined (Monoid) with other Sagas.
         }
     }

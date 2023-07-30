@@ -12,7 +12,6 @@ import com.fraktalio.domain.Command
 import com.fraktalio.domain.Event
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.*

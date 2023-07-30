@@ -7,8 +7,10 @@ import com.fraktalio.adapter.persistence.extension.alterSQLResource
 import com.fraktalio.adapter.persistence.extension.connection
 import com.fraktalio.adapter.persistence.extension.executeSql
 import com.fraktalio.application.MaterializedViewState
+import com.fraktalio.domain.Command
 import com.fraktalio.domain.Event
 import com.fraktalio.fmodel.application.MaterializedView
+import com.fraktalio.fmodel.application.SagaManager
 import com.fraktalio.fmodel.application.handle
 import io.r2dbc.spi.ConnectionFactory
 import io.r2dbc.spi.Row
@@ -406,10 +408,17 @@ internal class EventStream(private val connectionFactory: ConnectionFactory) {
                     END;
                 ' LANGUAGE plpgsql;
             """
-        private const val DATA =
+        private const val VIEW_DATA =
             """
                 INSERT INTO views
-                VALUES ('view', 500) 
+                VALUES ('view', 500)
+                ON CONFLICT (view) DO NOTHING;
+            """
+
+        private const val SAGA_VIEW_DATA =
+            """
+                INSERT INTO views
+                VALUES ('saga', 500)
                 ON CONFLICT (view) DO NOTHING;
             """
     }
@@ -437,7 +446,9 @@ internal class EventStream(private val connectionFactory: ConnectionFactory) {
         connectionFactory.connection().alterSQLResource(NACK_EVENT)
         connectionFactory.connection().alterSQLResource(SCHEDULE_NACK)
         LOGGER.debug("## Inserting data in View schema ##")
-        connectionFactory.connection().alterSQLResource(DATA)
+        connectionFactory.connection().alterSQLResource(VIEW_DATA)
+        connectionFactory.connection().alterSQLResource(SAGA_VIEW_DATA)
+
     }
 
 
@@ -606,7 +617,7 @@ internal class EventStream(private val connectionFactory: ConnectionFactory) {
      *
      * Uses [Dispatchers.IO] dispatcher with a limited parallelism
      */
-    fun streamEvents(
+    private fun streamEvents(
         view: String,
         actions: Flow<Action>
     ): Flow<Pair<Event, Long>> =
@@ -635,6 +646,7 @@ internal class EventStream(private val connectionFactory: ConnectionFactory) {
         materializedView: MaterializedView<MaterializedViewState, Event?>,
         scope: CoroutineScope
     ) {
+        LOGGER.info("### Registering materialized view $view")
         scope.launch(dbDispatcher) {
             val actions = Channel<Action>()
             streamEvents(view, actions.receiveAsFlow())
@@ -642,10 +654,53 @@ internal class EventStream(private val connectionFactory: ConnectionFactory) {
                     launch {
                         actions.send(Ack(-1, "start"))
                     }
+                    LOGGER.info("### Materialized view $view subscribed to events")
                 }
                 .onEach {
                     try {
+                        LOGGER.debug("View - Handling event {}", it.first)
                         materializedView.handle(it.first)
+                        actions.send(Ack(it.second, it.first.deciderId()))
+                    } catch (e: Exception) {
+                        LOGGER.error("Error while handling event, retrying in 10 seconds ${it.first}", e)
+                        actions.send(ScheduleNack(10000, it.first.deciderId()))
+                    }
+                }
+                .retry(5) { cause ->
+                    cause !is CancellationException
+                }
+                .collect()
+        }
+    }
+
+    /**
+     * Register a saga manager and start pooling events
+     * @param view the saga manager view name - saga needs a view to track the token/position of events being read.
+     * @param sagaManager the saga manager to register - event handler
+     * @param scope the coroutine scope
+     *
+     * Uses [Dispatchers.IO] dispatcher with a limited parallelism
+     */
+    fun registerSagaManagerAndStartPooling(
+        view: String,
+        sagaManager: SagaManager<Event?, Command>,
+        scope: CoroutineScope
+    ) {
+        LOGGER.info("### Registering saga manager with the view $view")
+        scope.launch(dbDispatcher) {
+            val actions = Channel<Action>()
+            streamEvents(view, actions.receiveAsFlow())
+                .onStart {
+                    launch {
+                        actions.send(Ack(-1, "start"))
+                    }
+                    LOGGER.info("### Saga manager $view subscribed to events")
+
+                }
+                .onEach {
+                    try {
+                        LOGGER.debug("Saga - Handling event {}", it.first)
+                        sagaManager.handle(it.first).collect()
                         actions.send(Ack(it.second, it.first.deciderId()))
                     } catch (e: Exception) {
                         LOGGER.error("Error while handling event, retrying in 10 seconds ${it.first}", e)

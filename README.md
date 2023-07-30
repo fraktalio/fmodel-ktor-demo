@@ -5,7 +5,7 @@ It is backing the [Fmodel Reference Guide](https://fraktalio.com/fmodel/).
 
 It demonstrates how to run our unique domain and orchestrate it in an EventSourced/EventDriven way.
 
-![event model image](.assets/restaurant-model.jpg)
+![event model image](.assets/restaurant-model2.jpg)
 *this bleuprint is an outcome of the [event-modeling](https://eventmodeling.org/posts/what-is-event-modeling/) process*
 
 ## Fmodel

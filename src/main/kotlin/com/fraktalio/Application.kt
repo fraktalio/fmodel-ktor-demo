@@ -14,6 +14,7 @@ import com.fraktalio.adapter.routes.restaurantRouting
 import com.fraktalio.application.Aggregate
 import com.fraktalio.application.aggregate
 import com.fraktalio.application.materializedView
+import com.fraktalio.application.paymentSagaManager
 import com.fraktalio.domain.*
 import com.fraktalio.plugins.configureSerialization
 import io.ktor.server.application.*
@@ -45,7 +46,7 @@ fun main(): Unit = SuspendApp {
             restaurantSaga(),
             aggregateEventRepository
         )
-        // ### Query Side - Event Streaming & Materialized View ###
+        // ### Query Side - Event Streaming, Materialized Views and Sagas ###
         val eventStream = EventStream(connectionFactory).apply { initSchema() }
         val restaurantRepository = RestaurantRepository(connectionFactory).apply { initSchema() }
         val orderRepository = OrderRepository(connectionFactory).apply { initSchema() }
@@ -58,6 +59,12 @@ fun main(): Unit = SuspendApp {
             orderView(),
             materializedViewStateRepository
         ).also { eventStream.registerMaterializedViewAndStartPooling("view", it, this@SuspendApp) }
+
+        @Suppress("UNUSED_VARIABLE")
+        val sagaManager = paymentSagaManager(
+            paymentSaga(),
+            aggregate
+        ).also { eventStream.registerSagaManagerAndStartPooling("saga", it, this@SuspendApp) }
 
         server(CIO, host = httpEnv.host, port = httpEnv.port) {
             configureSerialization()

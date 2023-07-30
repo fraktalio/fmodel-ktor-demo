@@ -116,8 +116,13 @@ data class OrderLineItem(
 
 @Serializable
 enum class OrderStatus {
-    CREATED, PREPARED, REJECTED, CANCELLED
+    CREATED, PREPARED, REJECTED, CANCELLED, PAYED
 }
+
+@Serializable
+@JvmInline
+value class PaymentId(@Serializable(with = UUIDSerializer::class) val value: UUID = UUID.randomUUID())
+
 // COMMANDS
 
 @Serializable
@@ -131,6 +136,11 @@ sealed class RestaurantCommand : Command() {
 @Serializable
 sealed class OrderCommand : Command() {
     abstract val identifier: OrderId
+}
+
+@Serializable
+sealed class PaymentCommand : Command() {
+    abstract val identifier: PaymentId
 }
 
 @Serializable
@@ -166,6 +176,22 @@ data class CreateOrderCommand(
 data class MarkOrderAsPreparedCommand(
     override val identifier: OrderId,
 ) : OrderCommand()
+
+@Serializable
+data class MarkOrderAsPayedCommand(
+    override val identifier: OrderId,
+) : OrderCommand()
+
+@Serializable
+data class PayCommand(
+    override val identifier: PaymentId = PaymentId(),
+    val orderId: OrderId,
+) : PaymentCommand()
+
+@Serializable
+data class CancelPaymentCommand(
+    override val identifier: PaymentId = PaymentId()
+) : PaymentCommand()
 
 // EVENTS
 
@@ -273,7 +299,22 @@ data class OrderPreparedEvent(
 }
 
 @Serializable
+data class OrderPayedEvent(
+    override val identifier: OrderId,
+    override val final: Boolean = false,
+) : OrderEvent() {
+    val status: OrderStatus = OrderStatus.PAYED
+}
+
+@Serializable
 data class OrderNotPreparedEvent(
+    override val identifier: OrderId,
+    override val reason: Reason,
+    override val final: Boolean = false,
+) : OrderErrorEvent()
+
+@Serializable
+data class OrderNotPayedEvent(
     override val identifier: OrderId,
     override val reason: Reason,
     override val final: Boolean = false,
