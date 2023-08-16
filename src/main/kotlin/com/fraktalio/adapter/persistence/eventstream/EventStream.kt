@@ -603,10 +603,18 @@ internal class EventStream(private val connectionFactory: ConnectionFactory) {
     }
 
     private fun poolEvents(view: String, poolingDelayMilliseconds: Long): Flow<Pair<Event, Long>> =
-        channelFlow<Pair<Event, Long>> {
-            while (isActive) {
-                getEvent(view)?.let { send(it) }
-                delay(poolingDelayMilliseconds)
+        flow {
+            while (currentCoroutineContext().isActive) {
+                LOGGER.info("# stream loop #: pulling the db for the view $view")
+                val event = getEvent(view)
+                if (event != null) {
+                    LOGGER.debug("# stream loop #: emitting the event {}", event)
+                    emit(event)
+                    LOGGER.debug("# stream loop #: event emitted")
+                } else {
+                    LOGGER.debug("# stream loop #: scheduling new pool in $poolingDelayMilliseconds milliseconds")
+                    delay(poolingDelayMilliseconds)
+                }
             }
         }.flowOn(dbDispatcher)
 
@@ -619,18 +627,20 @@ internal class EventStream(private val connectionFactory: ConnectionFactory) {
      */
     private fun streamEvents(
         view: String,
-        actions: Flow<Action>
+        actions: Flow<Action>,
+        scope: CoroutineScope
     ): Flow<Pair<Event, Long>> =
-        channelFlow {
+        flow {
             findViewById(view)?.let { viewEntity ->
-                launch {
+                scope.launch {
                     actions.collect {
                         executeLockAction(view, it)
                     }
                 }
                 poolEvents(view, viewEntity.poolingDelayMilliseconds)
-                    .collect { send(it) }
+                    .collect { emit(it) }
             }
+
         }.flowOn(dbDispatcher)
 
     /**
@@ -649,27 +659,27 @@ internal class EventStream(private val connectionFactory: ConnectionFactory) {
         LOGGER.info("### Registering materialized view $view")
         scope.launch(dbDispatcher) {
             val actions = Channel<Action>()
-            streamEvents(view, actions.receiveAsFlow())
+            streamEvents(view, actions.receiveAsFlow(), scope)
                 .onStart {
                     launch {
                         actions.send(Ack(-1, "start"))
                     }
                     LOGGER.info("### Materialized view $view subscribed to events")
                 }
-                .onEach {
+                .retry(5) { cause ->
+                    cause !is CancellationException
+                }
+                .collect {
                     try {
                         LOGGER.debug("View - Handling event {}", it.first)
                         materializedView.handle(it.first)
+                        LOGGER.debug("View - Handled event {}", it.first)
                         actions.send(Ack(it.second, it.first.deciderId()))
                     } catch (e: Exception) {
                         LOGGER.error("Error while handling event, retrying in 10 seconds ${it.first}", e)
                         actions.send(ScheduleNack(10000, it.first.deciderId()))
                     }
                 }
-                .retry(5) { cause ->
-                    cause !is CancellationException
-                }
-                .collect()
         }
     }
 
@@ -689,28 +699,27 @@ internal class EventStream(private val connectionFactory: ConnectionFactory) {
         LOGGER.info("### Registering saga manager with the view $view")
         scope.launch(dbDispatcher) {
             val actions = Channel<Action>()
-            streamEvents(view, actions.receiveAsFlow())
+            streamEvents(view, actions.receiveAsFlow(), scope)
                 .onStart {
                     launch {
                         actions.send(Ack(-1, "start"))
                     }
                     LOGGER.info("### Saga manager $view subscribed to events")
-
                 }
-                .onEach {
+                .retry(5) { cause ->
+                    cause !is CancellationException
+                }
+                .collect {
                     try {
                         LOGGER.debug("Saga - Handling event {}", it.first)
                         sagaManager.handle(it.first).collect()
+                        LOGGER.debug("Saga - Handled event {}", it.first)
                         actions.send(Ack(it.second, it.first.deciderId()))
                     } catch (e: Exception) {
                         LOGGER.error("Error while handling event, retrying in 10 seconds ${it.first}", e)
                         actions.send(ScheduleNack(10000, it.first.deciderId()))
                     }
                 }
-                .retry(5) { cause ->
-                    cause !is CancellationException
-                }
-                .collect()
         }
     }
 }
