@@ -7,14 +7,14 @@ import com.fraktalio.domain.MarkOrderAsPayedCommand
 import com.fraktalio.domain.PayCommand
 import com.fraktalio.fmodel.application.ActionPublisher
 import com.fraktalio.fmodel.application.handleOptimistically
-import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 
-class PaymentActionPublisher(val aggregate: Aggregate) : ActionPublisher<Command> {
-    @OptIn(FlowPreview::class)
+class PaymentActionPublisher(private val aggregate: Aggregate) : ActionPublisher<Command> {
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun Flow<Command>.publish(): Flow<Command> =
         flow {
             this@publish.collect {

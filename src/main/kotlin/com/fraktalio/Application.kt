@@ -8,7 +8,7 @@ import com.fraktalio.adapter.persistence.MaterializedViewStateRepositoryImpl
 import com.fraktalio.adapter.persistence.OrderRepository
 import com.fraktalio.adapter.persistence.RestaurantRepository
 import com.fraktalio.adapter.persistence.eventstore.EventStore
-import com.fraktalio.adapter.persistence.eventstream.EventStream
+import com.fraktalio.adapter.persistence.eventstream.EventStreamProcessor
 import com.fraktalio.adapter.persistence.extension.pooledConnectionFactory
 import com.fraktalio.adapter.routes.restaurantRouting
 import com.fraktalio.application.Aggregate
@@ -47,7 +47,7 @@ fun main(): Unit = SuspendApp {
             aggregateEventRepository
         )
         // ### Query Side - Event Streaming, Materialized Views and Sagas ###
-        val eventStream = EventStream(connectionFactory).apply { initSchema() }
+        val eventStreamProcessor = EventStreamProcessor(connectionFactory).apply { initSchema() }
         val restaurantRepository = RestaurantRepository(connectionFactory).apply { initSchema() }
         val orderRepository = OrderRepository(connectionFactory).apply { initSchema() }
         val materializedViewStateRepository =
@@ -58,13 +58,13 @@ fun main(): Unit = SuspendApp {
             restaurantView(),
             orderView(),
             materializedViewStateRepository
-        ).also { eventStream.registerMaterializedViewAndStartPooling("view", it, this@SuspendApp) }
+        ).also { eventStreamProcessor.registerMaterializedViewAndStartPooling("view", it, this@SuspendApp) }
 
         @Suppress("UNUSED_VARIABLE")
         val sagaManager = paymentSagaManager(
             paymentSaga(),
             aggregate
-        ).also { eventStream.registerSagaManagerAndStartPooling("saga", it, this@SuspendApp) }
+        ).also { eventStreamProcessor.registerSagaManagerAndStartPooling("saga", it, this@SuspendApp) }
 
         server(CIO, host = httpEnv.host, port = httpEnv.port) {
             configureSerialization()

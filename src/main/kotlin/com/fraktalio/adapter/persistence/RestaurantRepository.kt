@@ -106,5 +106,5 @@ class RestaurantRepository(private val connectionFactory: ConnectionFactory) {
 }
 
 private val restaurantMapper: (Row, RowMetadata) -> RestaurantViewState = { row, _ ->
-    Json.decodeFromString<RestaurantViewState>(row.get("restaurant_data", ByteArray::class.java).decodeToString())
+    Json.decodeFromString<RestaurantViewState>(row.get("restaurant_data", ByteArray::class.java)!!.decodeToString())
 }

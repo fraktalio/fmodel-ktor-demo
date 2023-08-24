@@ -104,5 +104,5 @@ class OrderRepository(private val connectionFactory: ConnectionFactory) {
 }
 
 private val orderMapper: (Row, RowMetadata) -> OrderViewState = { row, _ ->
-    Json.decodeFromString<OrderViewState>(row.get("order_data", ByteArray::class.java).decodeToString())
+    Json.decodeFromString<OrderViewState>(row.get("order_data", ByteArray::class.java)!!.decodeToString())
 }

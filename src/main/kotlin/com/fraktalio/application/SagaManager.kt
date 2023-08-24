@@ -5,12 +5,13 @@ import com.fraktalio.domain.Command
 import com.fraktalio.domain.Event
 import com.fraktalio.domain.PaymentSaga
 import com.fraktalio.fmodel.application.SagaManager
-import com.fraktalio.fmodel.application.sagaManager
 
 typealias PaymentSagaManager = SagaManager<Event?, Command>
 
-
-internal fun paymentSagaManager(paymentSaga: PaymentSaga, aggregate: Aggregate): PaymentSagaManager = sagaManager(
+/**
+ * Saga manager - Integrates the third-party payment provider with the aggregate/our system
+ */
+internal fun paymentSagaManager(paymentSaga: PaymentSaga, aggregate: Aggregate): PaymentSagaManager = SagaManager(
     paymentSaga,
     PaymentActionPublisher(aggregate)
 )

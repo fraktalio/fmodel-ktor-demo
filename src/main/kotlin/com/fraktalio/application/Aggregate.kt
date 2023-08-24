@@ -3,9 +3,8 @@ package com.fraktalio.application
 import com.fraktalio.domain.*
 import com.fraktalio.fmodel.application.EventLockingRepository
 import com.fraktalio.fmodel.application.EventSourcingLockingOrchestratingAggregate
-import com.fraktalio.fmodel.application.eventSourcingLockingOrchestratingAggregate
 import com.fraktalio.fmodel.domain.combine
-import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import java.util.*
 
 internal typealias AggregateEventRepository = EventLockingRepository<Command?, Event?, UUID?>
@@ -24,7 +23,7 @@ internal typealias Aggregate = EventSourcingLockingOrchestratingAggregate<Comman
  *
  * @author Иван Дугалић / Ivan Dugalic / @idugalic
  */
-@OptIn(FlowPreview::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 internal fun aggregate(
     orderDecider: OrderDecider,
     restaurantDecider: RestaurantDecider,
@@ -32,7 +31,7 @@ internal fun aggregate(
     restaurantSaga: RestaurantSaga,
     eventRepository: AggregateEventRepository
 
-): Aggregate = eventSourcingLockingOrchestratingAggregate(
+): Aggregate = EventSourcingLockingOrchestratingAggregate(
     // Combining two deciders into one.
     decider = orderDecider.combine(restaurantDecider),
     // How and where do you want to store new events.

@@ -3,7 +3,6 @@ package com.fraktalio.application
 import com.fraktalio.domain.*
 import com.fraktalio.fmodel.application.MaterializedView
 import com.fraktalio.fmodel.application.ViewStateRepository
-import com.fraktalio.fmodel.application.materializedView
 import com.fraktalio.fmodel.domain.combine
 
 /**
@@ -31,7 +30,7 @@ internal fun materializedView(
     restaurantView: RestaurantView,
     orderView: OrderView,
     viewStateRepository: MaterializedViewStateRepository
-): OrderRestaurantMaterializedView = materializedView(
+): OrderRestaurantMaterializedView = MaterializedView(
     // Combining two views into one, and (di)map the inconvenient Pair into a domain specific Data class (MaterializedViewState) that will represent view state better.
     view = restaurantView.combine(orderView).dimapOnState(
         fl = { Pair(it.restaurant, it.order) },

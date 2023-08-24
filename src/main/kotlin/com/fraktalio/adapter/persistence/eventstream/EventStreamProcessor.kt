@@ -150,7 +150,7 @@ internal fun LockEntity.asLock() = Lock(
  *
  *  @author Иван Дугалић / Ivan Dugalic / @idugalic
  */
-internal class EventStream(private val connectionFactory: ConnectionFactory) {
+internal class EventStreamProcessor(private val connectionFactory: ConnectionFactory) {
     companion object {
         private const val CREATE_TABLE_VIEWS =
             """
@@ -316,8 +316,11 @@ internal class EventStream(private val connectionFactory: ConnectionFactory) {
                 '
                     BEGIN
                         RETURN QUERY
-                            INSERT INTO "views" ("view", pooling_delay, start_at)
-                                VALUES (v_view, v_pooling_delay, v_start_at) RETURNING *;
+                            INSERT INTO "views" ("view", "pooling_delay", "start_at") 
+                                VALUES (v_view, v_pooling_delay, v_start_at)
+                              ON CONFLICT ON CONSTRAINT "views_pkey"
+                              DO UPDATE SET "updated_at" = NOW(), "start_at" = EXCLUDED."start_at", "pooling_delay" = EXCLUDED."pooling_delay"
+                              RETURNING *;
                     END;
                 ' LANGUAGE plpgsql;
             """
@@ -470,13 +473,7 @@ internal class EventStream(private val connectionFactory: ConnectionFactory) {
     ): View = withContext(dbDispatcher) {
         connectionFactory.connection()
             .executeSql(
-                """
-              INSERT INTO "views"
-              ("view", "pooling_delay", "start_at") VALUES ($1, $2, $3)
-              ON CONFLICT ON CONSTRAINT "views_pkey"
-              DO UPDATE SET "updated_at" = NOW(), "start_at" = EXCLUDED."start_at", "pooling_delay" = EXCLUDED."pooling_delay"
-              RETURNING *
-            """,
+                "SELECT * FROM register_view($1, $2, $3)",
                 viewMapper
             ) {
                 bind(0, view)
@@ -552,9 +549,9 @@ internal class EventStream(private val connectionFactory: ConnectionFactory) {
                         "SELECT * FROM ack_event($1, $2, $3)",
                         lockMapper
                     ) {
-                        bind(2, action.offset)
                         bind(0, view)
                         bind(1, action.deciderId)
+                        bind(2, action.offset)
                     }
                     .singleOrNull()
                     ?.asLock()
@@ -580,8 +577,8 @@ internal class EventStream(private val connectionFactory: ConnectionFactory) {
                         lockMapper
                     ) {
                         bind(0, view)
-                        bind(2, action.milliseconds)
                         bind(1, action.deciderId)
+                        bind(2, action.milliseconds)
                     }
                     .singleOrNull()
                     ?.asLock()
