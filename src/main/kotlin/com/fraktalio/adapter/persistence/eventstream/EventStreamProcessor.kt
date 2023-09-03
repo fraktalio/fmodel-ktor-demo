@@ -645,13 +645,15 @@ internal class EventStreamProcessor(private val connectionFactory: ConnectionFac
      * @param view the view name
      * @param materializedView the materialized view to register - event handler
      * @param scope the coroutine scope
+     * @param buffer the buffer size - the emitter (DB pooling) is suspended when the buffer overflows, to let slow collector (materialized view handler) catch up
      *
      * Uses [Dispatchers.IO] dispatcher with a limited parallelism
      */
     fun registerMaterializedViewAndStartPooling(
         view: String,
         materializedView: MaterializedView<MaterializedViewState, Event?>,
-        scope: CoroutineScope
+        scope: CoroutineScope,
+        buffer: Int = Channel.BUFFERED
     ) {
         LOGGER.info("### Registering materialized view $view")
         scope.launch(dbDispatcher) {
@@ -666,6 +668,7 @@ internal class EventStreamProcessor(private val connectionFactory: ConnectionFac
                 .retry(5) { cause ->
                     cause !is CancellationException
                 }
+                .buffer(buffer)
                 .collect {
                     try {
                         LOGGER.debug("View - Handling event {}", it.first)
@@ -685,13 +688,16 @@ internal class EventStreamProcessor(private val connectionFactory: ConnectionFac
      * @param view the saga manager view name - saga needs a view to track the token/position of events being read.
      * @param sagaManager the saga manager to register - event handler
      * @param scope the coroutine scope
+     * @param buffer the buffer size - the emitter (DB pooling) is suspended when the buffer overflows, to let slow collector (saga manager) catch up
+     *
      *
      * Uses [Dispatchers.IO] dispatcher with a limited parallelism
      */
     fun registerSagaManagerAndStartPooling(
         view: String,
         sagaManager: SagaManager<Event?, Command>,
-        scope: CoroutineScope
+        scope: CoroutineScope,
+        buffer: Int = Channel.BUFFERED
     ) {
         LOGGER.info("### Registering saga manager with the view $view")
         scope.launch(dbDispatcher) {
@@ -706,6 +712,7 @@ internal class EventStreamProcessor(private val connectionFactory: ConnectionFac
                 .retry(5) { cause ->
                     cause !is CancellationException
                 }
+                .buffer(buffer)
                 .collect {
                     try {
                         LOGGER.debug("Saga - Handling event {}", it.first)
