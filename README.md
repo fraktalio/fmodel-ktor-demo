@@ -6,7 +6,7 @@ It is backing the [Fmodel Reference Guide](https://fraktalio.com/fmodel/).
 It demonstrates how to run our unique domain and orchestrate it in an EventSourced/EventDriven way.
 
 ![event model image](.assets/restaurant-model2.jpg)
-*this bleuprint is an outcome of the [event-modeling](https://eventmodeling.org/posts/what-is-event-modeling/) process*
+*this blueprint is an outcome of the [event-modeling](https://eventmodeling.org/posts/what-is-event-modeling/) process*
 
 ## Fmodel
 
@@ -98,7 +98,7 @@ This project is using [Gradle](https://docs.gradle.org) as a build and automatio
 docker run --name postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres
 ```
 
-> Check the connection URL in [application enviroment variables](src/main/kotlin/com/fraktalio/Env.kt)
+> Check the connection URL in [application environment variables](src/main/kotlin/com/fraktalio/Env.kt)
 
 ```shell
 ./gradlew run
