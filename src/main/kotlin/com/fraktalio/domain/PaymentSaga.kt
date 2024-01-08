@@ -23,7 +23,7 @@ fun paymentSaga() = PaymentSaga(
             is OrderPreparedEvent -> flowOf(PayCommand(orderId = e.identifier))
             is OrderCreatedEvent -> emptyFlow()
             is OrderErrorEvent -> emptyFlow()
-            is OrderPayedEvent -> emptyFlow()
+            is OrderPaidEvent -> emptyFlow()
             is RestaurantEvent -> emptyFlow()
             null -> emptyFlow() // We ignore the `null` event by returning the empty flow of commands. Only the Saga that can handle `null` event/action-result can be combined (Monoid) with other Sagas.
         }

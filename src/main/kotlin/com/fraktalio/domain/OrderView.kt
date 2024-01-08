@@ -23,7 +23,7 @@ fun orderView() = OrderView(
         when (e) {
             is OrderCreatedEvent -> OrderViewState(e.identifier, e.restaurantId, e.status, e.lineItems)
             is OrderPreparedEvent -> s?.copy(status = e.status)
-            is OrderPayedEvent -> s?.copy(status = e.status)
+            is OrderPaidEvent -> s?.copy(status = e.status)
             is OrderRejectedEvent -> s?.copy(status = e.status)
             is OrderErrorEvent -> s // Error events are not changing the state in our/this case.
             null -> s // Null events are not changing the state / We return current state instead. Only the Decider that can handle `null` event can be combined (Monoid) with other Deciders.

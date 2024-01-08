@@ -116,7 +116,7 @@ data class OrderLineItem(
 
 @Serializable
 enum class OrderStatus {
-    CREATED, PREPARED, REJECTED, CANCELLED, PAYED
+    CREATED, PREPARED, REJECTED, CANCELLED, PAID
 }
 
 @Serializable
@@ -178,7 +178,7 @@ data class MarkOrderAsPreparedCommand(
 ) : OrderCommand()
 
 @Serializable
-data class MarkOrderAsPayedCommand(
+data class MarkOrderAsPaidCommand(
     override val identifier: OrderId,
 ) : OrderCommand()
 
@@ -299,11 +299,11 @@ data class OrderPreparedEvent(
 }
 
 @Serializable
-data class OrderPayedEvent(
+data class OrderPaidEvent(
     override val identifier: OrderId,
     override val final: Boolean = false,
 ) : OrderEvent() {
-    val status: OrderStatus = OrderStatus.PAYED
+    val status: OrderStatus = OrderStatus.PAID
 }
 
 @Serializable
@@ -314,7 +314,7 @@ data class OrderNotPreparedEvent(
 ) : OrderErrorEvent()
 
 @Serializable
-data class OrderNotPayedEvent(
+data class OrderNotPaidEvent(
     override val identifier: OrderId,
     override val reason: Reason,
     override val final: Boolean = false,
