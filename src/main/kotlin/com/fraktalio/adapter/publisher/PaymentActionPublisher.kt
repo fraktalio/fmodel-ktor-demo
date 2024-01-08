@@ -3,7 +3,7 @@ package com.fraktalio.adapter.publisher
 import com.fraktalio.LOGGER
 import com.fraktalio.application.Aggregate
 import com.fraktalio.domain.Command
-import com.fraktalio.domain.MarkOrderAsPayedCommand
+import com.fraktalio.domain.MarkOrderAsPaidCommand
 import com.fraktalio.domain.PayCommand
 import com.fraktalio.fmodel.application.ActionPublisher
 import com.fraktalio.fmodel.application.handleOptimistically
@@ -22,7 +22,7 @@ class PaymentActionPublisher(private val aggregate: Aggregate) : ActionPublisher
                 LOGGER.info("Publishing command to the Payment service: $it")
                 delay(1000)
                 // once you get the response from the Payment service, you can emit command back to the internal aggregate
-                aggregate.handleOptimistically(MarkOrderAsPayedCommand((it as PayCommand).orderId)).collect()
+                aggregate.handleOptimistically(MarkOrderAsPaidCommand((it as PayCommand).orderId)).collect()
                 // simply emit the successfully published command(s)
                 emit(it)
             }

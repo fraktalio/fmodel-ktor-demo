@@ -266,13 +266,13 @@ internal class EventStore(private val connectionFactory: ConnectionFactory) {
                 VALUES ('Order', 'com.fraktalio.domain.OrderPreparedEvent');
                 
                 INSERT INTO deciders
-                VALUES ('Order', 'com.fraktalio.domain.OrderPayedEvent');
+                VALUES ('Order', 'com.fraktalio.domain.OrderPaidEvent');
                 
                 INSERT INTO deciders
                 VALUES ('Order', 'com.fraktalio.domain.OrderNotPreparedEvent');
                 
                 INSERT INTO deciders
-                VALUES ('Order', 'com.fraktalio.domain.OrderNotPayedEvent');
+                VALUES ('Order', 'com.fraktalio.domain.OrderNotPaidEvent');
                 
                 INSERT INTO deciders
                 VALUES ('Order', 'com.fraktalio.domain.OrderRejectedEvent');

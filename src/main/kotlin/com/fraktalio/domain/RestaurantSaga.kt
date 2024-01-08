@@ -22,7 +22,7 @@ fun restaurantSaga() = RestaurantSaga(
             //TODO evolve the example ;), it does not do much at the moment.
             is OrderCreatedEvent -> emptyFlow()
             is OrderPreparedEvent -> emptyFlow()
-            is OrderPayedEvent -> emptyFlow()
+            is OrderPaidEvent -> emptyFlow()
             is OrderErrorEvent -> emptyFlow()
             null -> emptyFlow() // We ignore the `null` event by returning the empty flow of commands. Only the Saga that can handle `null` event/action-result can be combined (Monoid) with other Sagas.
         }
