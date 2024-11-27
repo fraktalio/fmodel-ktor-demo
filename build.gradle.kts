@@ -11,7 +11,7 @@ val prometeus_version: String by project
 val kotlinx_collections_immutable_version: String by project
 
 plugins {
-    kotlin("jvm") version "2.0.10"
+    kotlin("jvm") version "2.1.0"
     id("io.ktor.plugin") version "2.3.12"
     id("org.jetbrains.kotlin.plugin.serialization") version "2.0.10"
 }
